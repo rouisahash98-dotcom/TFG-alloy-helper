@@ -558,7 +558,7 @@ function solve(alloy, targetIngots, techLevel, purityMap, useSmallDusts, useNugg
          if(smDustMB !== mbArr[i]) inputs.push({ compIdx: i, mB: smDustMB, type:'small_dust' });
       }
       if(useNuggets){
-         const nuggetMB = calcMB(PURITIES.nugget.baseMB, percent);
+         const nuggetMB = calcMB(PURITIES.nugget.baseMB, 100); // Nuggets are always pure metal (16mB)
          if(nuggetMB !== mbArr[i]) inputs.push({ compIdx: i, mB: nuggetMB, type:'nugget' });
       }
     }
@@ -670,7 +670,7 @@ function solve(alloy, targetIngots, techLevel, purityMap, useSmallDusts, useNugg
              const mB = calcMB(PURITIES.small_dust.baseMB, sourceMap[comps[cp].id] || 100);
              compResults[cp].items.push({ label: 'Small Dust', count: best[i], mB_per: mB });
           } else if(inputs[i].type === 'nugget') {
-             const mB = calcMB(PURITIES.nugget.baseMB, sourceMap[comps[cp].id] || 100);
+             const mB = calcMB(PURITIES.nugget.baseMB, 100); // Nuggets are always pure metal
              compResults[cp].items.push({ label: 'Small Nugget', count: best[i], mB_per: mB });
           } else {
              compResults[cp].items.push({ 
