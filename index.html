@@ -312,15 +312,59 @@ footer a:hover{text-decoration:underline}
 const INGOT_MB = 144;
 
 const PURITIES = {
-  poor:       { label:'Poor Ore',     mB:24  },
-  normal:     { label:'Normal Ore',   mB:36  },
-  rich:       { label:'Rich Ore',     mB:48  },
-  crushed:    { label:'Crushed Ore',  mB:80  },
-  purified:   { label:'Purified Ore', mB:100 },
-  dust:       { label:'Dust',         mB:144 },
-  small_dust: { label:'Small Dust',   mB:32  },
-  nugget:     { label:'Small Nugget', mB:16  },
+  poor:       { label:'Poor Ore',     baseMB:24  },
+  normal:     { label:'Normal Ore',   baseMB:36  },
+  rich:       { label:'Rich Ore',     baseMB:48  },
+  crushed:    { label:'Crushed Ore',  baseMB:80  },
+  purified:   { label:'Purified Ore', baseMB:100 },
+  dust:       { label:'Dust',         baseMB:144 },
+  small_dust: { label:'Small Dust',   baseMB:36  }, // Note: Base is 36, then modified by ore % 
+  nugget:     { label:'Small Nugget', baseMB:16  },
 };
+
+const ORE_SOURCES = {
+  copper: [
+    { id: 'native', label: 'Native Copper', pct: 100 },
+    { id: 'chalcocite', label: 'Chalcocite', pct: 95 },
+    { id: 'tetrahedrite', label: 'Tetrahedrite / Malachite / Bornite', pct: 90 },
+    { id: 'chalcopyrite', label: 'Chalcopyrite', pct: 85 }
+  ],
+  iron: [
+    { id: 'hematite', label: 'Hematite / Magnetite / Limonite', pct: 90 },
+    { id: 'mineral_sand', label: 'Mineral Sand (Basaltic/Granitic)', pct: 80 }
+  ],
+  tin: [
+    { id: 'cassiterite', label: 'Cassiterite', pct: 100 },
+    { id: 'cassiterite_sand', label: 'Cassiterite Sand', pct: 80 }
+  ],
+  zinc: [
+    { id: 'sphalerite', label: 'Sphalerite', pct: 90 }
+  ],
+  nickel: [
+    { id: 'garnierite', label: 'Garnierite', pct: 100 },
+    { id: 'pentlandite', label: 'Pentlandite', pct: 85 }
+  ],
+  lead: [
+    { id: 'lead', label: 'Lead', pct: 100 },
+    { id: 'galena', label: 'Galena', pct: 85 }
+  ],
+  carbon: [
+    { id: 'coal', label: 'Coal', pct: 100 }
+  ],
+  sulfur: [
+    { id: 'sulfur', label: 'Sulfur', pct: 100 }
+  ],
+  default: [
+    { id: 'native', label: 'Native / Pure', pct: 100 }
+  ]
+};
+
+// Modpack-Modern calculation specific logic
+function calcMB(baseMB, percent) {
+    if (percent === 100) return baseMB;
+    const value = baseMB * (percent / 100);
+    return (value % 2 === 0) ? value : (Math.round(value) - 1);
+}
 
 const TECH_LEVELS = {
   1:{ label:'Vessel / Pit Kiln',   maxMB: 3024,  maxSlots: 4 },
@@ -342,44 +386,41 @@ const INGOT_COLORS = {
   tin_bronze:      ['#cdb968', '#f2db83', '#a38f42', '#4f4214']
 };
 
-function getIngotSVG(id) {
-  const c = INGOT_COLORS[id] || ['#999', '#ccc', '#666', '#222'];
-  const base = c[0], hi = c[1], sh = c[2], out = c[3];
-  return `<svg width="100%" height="100%" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated;">
-    <rect x="6" y="3" width="5" height="1" fill="${out}" />
-    <rect x="4" y="4" width="2" height="1" fill="${out}" />
-    <rect x="11" y="4" width="2" height="1" fill="${out}" />
-    <rect x="3" y="5" width="1" height="1" fill="${out}" />
-    <rect x="13" y="5" width="1" height="1" fill="${out}" />
-    <rect x="2" y="6" width="1" height="3" fill="${out}" />
-    <rect x="14" y="6" width="1" height="3" fill="${out}" />
-    <rect x="3" y="9" width="1" height="1" fill="${out}" />
-    <rect x="13" y="9" width="1" height="1" fill="${out}" />
-    <rect x="4" y="10" width="1" height="1" fill="${out}" />
-    <rect x="12" y="10" width="1" height="1" fill="${out}" />
-    <rect x="5" y="11" width="7" height="1" fill="${out}" />
-
-    <!-- Fill Base -->
-    <rect x="6" y="4" width="5" height="1" fill="${hi}" />
-    <rect x="4" y="5" width="2" height="1" fill="${hi}" />
-    <rect x="6" y="5" width="5" height="1" fill="${base}" />
-    <rect x="11" y="5" width="2" height="1" fill="${base}" />
-
-    <rect x="3" y="6" width="1" height="1" fill="${hi}" />
-    <rect x="4" y="6" width="9" height="1" fill="${base}" />
-    <rect x="13" y="6" width="1" height="1" fill="${sh}" />
-
-    <rect x="3" y="7" width="10" height="1" fill="${base}" />
-    <rect x="13" y="7" width="1" height="1" fill="${sh}" />
-
-    <rect x="3" y="8" width="9" height="1" fill="${base}" />
-    <rect x="12" y="8" width="2" height="1" fill="${sh}" />
-
-    <rect x="4" y="9" width="7" height="1" fill="${base}" />
-    <rect x="11" y="9" width="2" height="1" fill="${sh}" />
-
-    <rect x="5" y="10" width="6" height="1" fill="${sh}" />
-    <rect x="11" y="10" width="1" height="1" fill="${sh}" />
+function getIngotSVG(c){
+  const cols = COLORS[c] || COLORS.copper;
+  const pal = {
+     '1': cols[1], // Highlight
+     '2': cols[0], // Base
+     '3': cols[2], // Shadow
+     '4': cols[3] || cols[2], // Dark Edge
+     'O': '#181818' // Outline
+  };
+  const art = [
+    "          OOO   ",
+    "        OO111O  ",
+    "      OO21111O  ",
+    "    OO2221123O  ",
+    "  OO222221233O  ",
+    " O22222222333O  ",
+    "O222222233333O  ",
+    "O42222333333O   ",
+    "O4423333333O    ",
+    "O44433333OO     ",
+    " O44333OO       ",
+    "  OO4OO         ",
+    "    O           "
+  ];
+  let rects = '';
+  for(let y=0; y<art.length; y++){
+    for(let x=0; x<art[y].length; x++){
+      const p = art[y][x];
+      if(p !== ' '){
+         rects += `<rect x="${x+1}" y="${y+1}" width="1" height="1" fill="${pal[p]}"/>`;
+      }
+    }
+  }
+  return `<svg width="24" height="24" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+    ${rects}
   </svg>`;
 }
 
@@ -485,10 +526,10 @@ const ALLOYS = [
 
 function clamp(v,lo,hi){ return Math.max(lo,Math.min(hi,v)) }
 
-function solve(alloy, targetIngots, techLevel, purityMap, useSmallDusts, useNuggets, minimizeMap){
+function solve(alloy, targetIngots, techLevel, purityMap, useSmallDusts, useNuggets, minimizeMap, sourceMap){
   const comps  = alloy.comps;
   const n      = comps.length;
-  const mbArr  = comps.map(c => PURITIES[purityMap[c.id]].mB);
+  const mbArr  = comps.map(c => calcMB(PURITIES[purityMap[c.id]].baseMB, sourceMap[c.id] || 100));
   const minPct = comps.map(c => c.min / 100);
   const maxPct = comps.map(c => c.max / 100);
   const maxMB  = TECH_LEVELS[techLevel].maxMB;
@@ -510,13 +551,15 @@ function solve(alloy, targetIngots, techLevel, purityMap, useSmallDusts, useNugg
     let inputs = [];
     for(let i=0; i<n; i++){
       inputs.push({ compIdx: i, mB: mbArr[i], type:'base' });
-      if(useSmallDusts && mbArr[i] !== 32){
-         // Also allow small dusts for this metal
-         inputs.push({ compIdx: i, mB: 32, type:'small_dust' });
+      const percent = sourceMap[comps[i].id] || 100;
+      
+      if(useSmallDusts){
+         const smDustMB = calcMB(PURITIES.small_dust.baseMB, percent);
+         if(smDustMB !== mbArr[i]) inputs.push({ compIdx: i, mB: smDustMB, type:'small_dust' });
       }
-      if(useNuggets && mbArr[i] !== 16){
-         // Also allow nuggets for this metal
-         inputs.push({ compIdx: i, mB: 16, type:'nugget' });
+      if(useNuggets){
+         const nuggetMB = calcMB(PURITIES.nugget.baseMB, percent);
+         if(nuggetMB !== mbArr[i]) inputs.push({ compIdx: i, mB: nuggetMB, type:'nugget' });
       }
     }
     const numVars = inputs.length;
@@ -624,9 +667,11 @@ function solve(alloy, targetIngots, techLevel, purityMap, useSmallDusts, useNugg
           compResults[cp].contribMB += best[i] * inputs[i].mB;
           
           if(inputs[i].type === 'small_dust') {
-             compResults[cp].items.push({ label: 'Small Dust', count: best[i], mB_per: 32 });
+             const mB = calcMB(PURITIES.small_dust.baseMB, sourceMap[comps[cp].id] || 100);
+             compResults[cp].items.push({ label: 'Small Dust', count: best[i], mB_per: mB });
           } else if(inputs[i].type === 'nugget') {
-             compResults[cp].items.push({ label: 'Small Nugget', count: best[i], mB_per: 16 });
+             const mB = calcMB(PURITIES.nugget.baseMB, sourceMap[comps[cp].id] || 100);
+             compResults[cp].items.push({ label: 'Small Nugget', count: best[i], mB_per: mB });
           } else {
              compResults[cp].items.push({ 
                 label: PURITIES[purityMap[comps[cp].id]].label, 
@@ -673,6 +718,7 @@ const S = {
   isCustom : false,
   purity   : {},   // metal_id → purity key
   minimize : {},   // metal_id → boolean
+  source   : {},   // metal_id → percent (e.g. 90)
 };
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -712,7 +758,13 @@ function selectAlloy(a){
   S.alloy  = a;
   S.purity = {};
   S.minimize = {};
-  a.comps.forEach(c=>{ S.purity[c.id]='normal'; S.minimize[c.id]=false; });
+  S.source = {};
+  a.comps.forEach(c=>{ 
+     S.purity[c.id]='normal'; 
+     S.minimize[c.id]=false; 
+     const srcList = ORE_SOURCES[c.id] || ORE_SOURCES.default;
+     S.source[c.id] = srcList[0].pct;
+  });
 
   // card highlight
   document.querySelectorAll('.acard').forEach(c=>c.classList.remove('sel'));
@@ -776,7 +828,36 @@ function buildPurityRows(a){
 
     const lbl = document.createElement('div');
     lbl.className='prow-name'; 
+    lbl.style.display = 'flex';
+    lbl.style.alignItems = 'center';
+    lbl.style.gap = '8px';
     lbl.textContent=c.name;
+
+    const sources = ORE_SOURCES[c.id] || ORE_SOURCES.default;
+    if(sources.length > 1){
+        const sel = document.createElement('select');
+        sel.style.background = '#222';
+        sel.style.color = '#e0e0e0';
+        sel.style.border = '1px solid var(--bdr)';
+        sel.style.borderRadius = '4px';
+        sel.style.fontSize = '0.75rem';
+        sel.style.padding = '2px 4px';
+        sel.style.outline = 'none';
+        sources.forEach(src => {
+            const opt = document.createElement('option');
+            opt.value = src.pct;
+            opt.textContent = src.label + (src.pct < 100 ? ` (${src.pct}%)` : '');
+            opt.style.background = '#2a2a2a';
+            opt.style.color = '#fff';
+            if(S.source[c.id] === src.pct) opt.selected = true;
+            sel.appendChild(opt);
+        });
+        sel.addEventListener('change', (e) => {
+            S.source[c.id] = parseInt(e.target.value);
+            buildPurityRows(a); // re-render to update mB in the pills
+        });
+        lbl.appendChild(sel);
+    }
 
     const minCb = document.createElement('label');
     minCb.style.fontSize = '0.72rem';
@@ -798,8 +879,9 @@ function buildPurityRows(a){
     pills.className='ppills';
     Object.entries(PURITIES).forEach(([key,p])=>{
       const btn = document.createElement('button');
-      btn.className='ppill'+(key==='normal'?' on':'');
-      btn.textContent=`${p.label} (${p.mB} mB)`;
+      btn.className='ppill'+(S.purity[c.id]===key?' on':'');
+      const actualMB = calcMB(p.baseMB, S.source[c.id]);
+      btn.textContent=`${p.label} (${actualMB} mB)`;
       btn.addEventListener('click',()=>{
         pills.querySelectorAll('.ppill').forEach(b=>b.classList.remove('on'));
         btn.classList.add('on');
@@ -865,7 +947,7 @@ function run(){
   setTimeout(()=>{
     const useSmallDusts = $('use-dusts-cb').checked;
     const useNuggets = $('use-nuggets-cb').checked;
-    const res = solve(S.alloy, ingots, S.tech, S.purity, useSmallDusts, useNuggets, S.minimize);
+    const res = solve(S.alloy, ingots, S.tech, S.purity, useSmallDusts, useNuggets, S.minimize, S.source);
     $('calc-btn').disabled=false;
     $('calc-btn').textContent='⚗️ Calculate Ratios';
     if(!res.ok){ showErr(res.msg); return; }
