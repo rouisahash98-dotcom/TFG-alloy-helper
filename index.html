@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TFG Alloy Calculator</title>
+<meta name="description" content="TerraFirmaGreg Alloy Ratio Calculator – optimal ore combos with zero backend."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+
+<style>
+/* ═══ Tokens ═══════════════════════════════════════════════════════════ */
+:root{
+  --bg:#0c0d10;--bg2:#13151a;
+  --surf:rgba(255,255,255,.042);--surf-hi:rgba(255,255,255,.07);
+  --bdr:rgba(255,255,255,.08);--bdr-hi:rgba(255,255,255,.18);
+  --acc:#f0923a;--acc2:#e05a1a;--acc-glow:rgba(240,146,58,.28);
+  --green:#4ade80;--red:#f87171;--yellow:#fbbf24;--blue:#60a5fa;
+  --t1:#f0eee8;--t2:#9a9490;--t3:#5a5650;
+  --r:12px;--rl:18px;--rsm:7px;
+  --sh:0 8px 32px rgba(0,0,0,.55);
+  --ease:.18s ease;
+  font-family:'Outfit',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--t1);min-height:100vh;overflow-x:hidden;line-height:1.6}
+
+/* bg grid */
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(240,146,58,.035) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(240,146,58,.035) 1px,transparent 1px);
+  background-size:44px 44px;
+  animation:gdrift 80s linear infinite;
+}
+@keyframes gdrift{to{background-position:44px 44px}}
+
+/* ═══ Header ═══════════════════════════════════════════════════════════ */
+header{
+  position:relative;z-index:10;
+  border-bottom:1px solid var(--bdr);
+  background:rgba(12,13,16,.85);backdrop-filter:blur(18px);
+}
+.hdr{max-width:1300px;margin:0 auto;padding:16px 24px;display:flex;align-items:center;gap:14px}
+.logo-icon{font-size:2rem;filter:drop-shadow(0 0 12px var(--acc))}
+.logo h1{
+  font-size:1.35rem;font-weight:700;
+  background:linear-gradient(90deg,#f0923a,#ffd580);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.logo p{font-size:.75rem;color:var(--t2)}
+
+/* ═══ Layout ════════════════════════════════════════════════════════════ */
+main{
+  position:relative;z-index:5;
+  max-width:1300px;margin:0 auto;padding:28px 24px;
+  display:grid;grid-template-columns:320px 1fr;gap:22px;align-items:start;
+}
+@media(max-width:820px){main{grid-template-columns:1fr}}
+
+/* ═══ Panel ════════════════════════════════════════════════════════════ */
+.panel{
+  background:var(--surf);border:1px solid var(--bdr);border-radius:var(--rl);
+  backdrop-filter:blur(20px);padding:22px;box-shadow:var(--sh);
+}
+.panel-label{
+  font-size:.68rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--t2);margin-bottom:14px;
+}
+
+/* ═══ Alloy Grid ════════════════════════════════════════════════════════ */
+.alloy-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.acard{
+  cursor:pointer;border-radius:var(--r);border:1px solid var(--bdr);
+  background:var(--surf);padding:10px 6px;
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  transition:var(--ease);position:relative;overflow:hidden;
+  user-select:none;
+}
+.acard::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at 50% 0%,var(--acc-glow),transparent 70%);
+  opacity:0;transition:opacity .25s;
+}
+.acard:hover{border-color:var(--bdr-hi);background:var(--surf-hi)}
+.acard:hover::before{opacity:1}
+.acard.sel{border-color:var(--acc);background:rgba(240,146,58,.09);box-shadow:0 0 0 2px var(--acc-glow)}
+.acard.sel::before{opacity:1}
+.acard-icon{font-size:1.9rem;filter:drop-shadow(0 2px 6px rgba(0,0,0,.6))}
+.acard-name{font-size:.65rem;font-weight:600;text-align:center;line-height:1.25;color:var(--t1)}
+.acard-badge{font-size:.55rem;color:var(--t3);background:rgba(255,255,255,.05);border-radius:40px;padding:1px 6px}
+
+/* ═══ Config panel ══════════════════════════════════════════════════════ */
+.cfg{display:flex;flex-direction:column;gap:18px}
+
+/* alloy header */
+.alloy-hdr{display:flex;align-items:center;gap:14px;padding-bottom:14px;border-bottom:1px solid var(--bdr)}
+.alloy-hdr-icon{font-size:2.6rem;filter:drop-shadow(0 0 14px var(--acc))}
+.alloy-hdr h2{font-size:1.3rem;font-weight:700}
+.alloy-hdr p{font-size:.78rem;color:var(--t2)}
+
+.hint{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:36px 16px;color:var(--t3);text-align:center}
+.hint-icon{font-size:2.4rem}
+
+/* section */
+.csec{display:flex;flex-direction:column;gap:9px}
+.slabel{font-size:.68rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--t2)}
+
+/* pills */
+.pills{display:flex;flex-wrap:wrap;gap:7px}
+.pill{
+  cursor:pointer;border:1px solid var(--bdr);background:var(--surf);color:var(--t2);
+  border-radius:40px;padding:5px 13px;font:500 .8rem 'Outfit',sans-serif;
+  display:inline-flex;align-items:center;gap:5px;transition:var(--ease);
+}
+.pill:hover{border-color:var(--bdr-hi);color:var(--t1);background:var(--surf-hi)}
+.pill.on{border-color:var(--acc);color:var(--acc);background:rgba(240,146,58,.10)}
+.pill:disabled,.pill.off{opacity:.32;cursor:not-allowed;pointer-events:none}
+
+/* custom input */
+.custom-row{display:flex;align-items:center;gap:8px;margin-top:2px}
+.num-input{
+  width:100px;padding:6px 11px;border-radius:var(--rsm);border:1px solid var(--bdr);
+  background:rgba(0,0,0,.4);color:var(--t1);font:500 .88rem 'Outfit',sans-serif;outline:none;
+  transition:border-color var(--ease);
+}
+.num-input:focus{border-color:var(--acc)}
+.num-input::-webkit-inner-spin-button{opacity:0}
+.unit{font-size:.75rem;color:var(--t2)}
+
+/* purity rows */
+.prows{display:flex;flex-direction:column;gap:11px}
+.prow{display:flex;flex-direction:column;gap:5px}
+.prow-name{font-size:.8rem;font-weight:600;color:var(--t1)}
+.ppills{display:flex;flex-wrap:wrap;gap:6px}
+.ppill{
+  cursor:pointer;border:1px solid var(--bdr);background:var(--surf);color:var(--t2);
+  border-radius:40px;padding:3px 11px;font:400 .75rem 'Outfit',sans-serif;transition:var(--ease);
+}
+.ppill:hover{border-color:var(--bdr-hi);color:var(--t1)}
+.ppill.on{border-color:var(--acc);color:var(--acc);background:rgba(240,146,58,.10)}
+
+/* capacity hint */
+.cap-hint{font-size:.72rem;color:var(--t3)}
+
+/* calc button */
+.calc-btn{
+  width:100%;padding:13px 22px;border-radius:var(--r);border:none;cursor:pointer;
+  background:linear-gradient(135deg,var(--acc),var(--acc2));
+  color:#fff;font:700 .95rem 'Outfit',sans-serif;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 4px 22px rgba(240,146,58,.35);transition:var(--ease);position:relative;overflow:hidden;
+}
+.calc-btn:hover{transform:translateY(-2px);box-shadow:0 6px 30px rgba(240,146,58,.5)}
+.calc-btn:active{transform:translateY(0)}
+.calc-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+
+/* ═══ Results ════════════════════════════════════════════════════════════ */
+.results{display:flex;flex-direction:column;gap:14px}
+.res-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--bdr)}
+.res-title{font-size:.95rem;font-weight:700}
+.badge{font-size:.7rem;font-weight:600;padding:3px 10px;border-radius:40px}
+.badge-perfect{background:rgba(74,222,128,.13);color:var(--green);border:1px solid rgba(74,222,128,.28)}
+.badge-waste{background:rgba(251,191,36,.11);color:var(--yellow);border:1px solid rgba(251,191,36,.25)}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{
+  background:rgba(0,0,0,.25);border:1px solid var(--bdr);border-radius:var(--rsm);
+  padding:9px 13px;display:flex;flex-direction:column;gap:1px;
+}
+.stat-val{font-size:1.15rem;font-weight:700;color:var(--acc)}
+.stat-lbl{font-size:.68rem;color:var(--t2)}
+
+.comp-list{display:flex;flex-direction:column;gap:9px}
+.ccard{
+  background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);
+  padding:13px 15px;
+  display:grid;grid-template-columns:1fr auto;gap:7px 14px;
+  animation:slideup .28s ease both;
+}
+.ccard:nth-child(2){animation-delay:.05s}
+.ccard:nth-child(3){animation-delay:.10s}
+@keyframes slideup{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
+.cname{font-weight:600;font-size:.88rem}
+.cpurity{font-size:.73rem;color:var(--t2)}
+.ccount{font-size:1.25rem;font-weight:700;color:var(--acc);text-align:right;align-self:center;line-height:1}
+.ccount span{font-size:.62rem;color:var(--t2);font-weight:400;display:block}
+
+.rbar-wrap{grid-column:1/-1}
+.rbar-top{display:flex;justify-content:space-between;font-size:.7rem;color:var(--t2);margin-bottom:3px}
+.rbar{height:5px;background:rgba(255,255,255,.07);border-radius:40px;overflow:hidden}
+.rbar-fill{height:100%;border-radius:40px;background:linear-gradient(90deg,var(--acc),#ffd580);transition:width .55s cubic-bezier(.34,1.56,.64,1)}
+
+/* error */
+.err{
+  background:rgba(248,113,113,.09);border:1px solid rgba(248,113,113,.28);
+  color:var(--red);border-radius:var(--rsm);padding:11px 15px;font-size:.83rem;
+}
+
+.hidden{display:none!important}
+
+/* footer */
+footer{position:relative;z-index:5;text-align:center;padding:20px;color:var(--t3);font-size:.75rem;border-top:1px solid var(--bdr)}
+footer a{color:var(--acc);text-decoration:none}
+footer a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr">
+    <div class="logo-icon">⚗️</div>
+    <div class="logo">
+      <h1>TFG Alloy Calculator</h1>
+      <p>TerraFirmaGreg · Optimal Ore Ratios</p>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- ── Alloy picker ────────────────────────────────── -->
+  <section class="panel">
+    <div class="panel-label">Select Alloy</div>
+    <div class="alloy-grid" id="alloy-grid"></div>
+  </section>
+
+  <!-- ── Config + Results ───────────────────────────── -->
+  <section class="panel cfg">
+
+    <!-- alloy header -->
+    <div id="alloy-hdr" class="alloy-hdr hidden">
+      <div id="ahdr-icon" class="alloy-hdr-icon"></div>
+      <div>
+        <h2 id="ahdr-name"></h2>
+        <p  id="ahdr-desc"></p>
+      </div>
+    </div>
+    <div id="hint" class="hint">
+      <div class="hint-icon">👈</div>
+      <p>Choose an alloy to get started.</p>
+    </div>
+
+    <!-- tech level -->
+    <div id="tech-sec" class="csec hidden">
+      <div class="slabel">Tech Level</div>
+      <div class="pills" id="tech-pills">
+        <button class="pill on" data-tl="1" title="Vessel / Pit Kiln – 300 mB max">🏺 Vessel</button>
+        <button class="pill"    data-tl="2" title="Crucible – 2 000 mB max">🔥 Crucible</button>
+        <button class="pill"    data-tl="3" title="Alloy Machine – 32 000 mB max">⚙️ Machine</button>
+      </div>
+      <p class="cap-hint" id="cap-hint"></p>
+    </div>
+
+    <!-- amount -->
+    <div id="amt-sec" class="csec hidden">
+      <div class="slabel">Target Ingots</div>
+      <div class="pills" id="amt-pills">
+        <button class="pill on" data-amt="1">1</button>
+        <button class="pill"    data-amt="5">5</button>
+        <button class="pill"    data-amt="10">10</button>
+        <button class="pill"    data-amt="custom">Custom</button>
+      </div>
+      <div id="custom-row" class="custom-row hidden">
+        <input type="number" id="custom-val" class="num-input" min="1" max="1000" placeholder="e.g. 32"/>
+        <span class="unit">ingots</span>
+      </div>
+    </div>
+
+    <!-- purity per component -->
+    <div id="purity-sec" class="csec hidden">
+      <div class="slabel">Ore Purity</div>
+      <div class="prows" id="prows"></div>
+      
+      <div class="csec" style="margin-top:12px">
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;cursor:pointer;color:var(--t2);">
+          <input type="checkbox" id="use-nuggets-cb" style="accent-color:var(--acc);width:16px;height:16px;">
+          <span>Allow Small Dusts (32 mB) to achieve zero waste</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- calculate -->
+    <div id="calc-sec" class="csec hidden">
+      <button class="calc-btn" id="calc-btn">⚗️ Calculate Ratios</button>
+    </div>
+
+    <!-- results -->
+    <div id="results" class="results hidden"></div>
+
+    <!-- error -->
+    <div id="err" class="err hidden"></div>
+
+  </section>
+</main>
+
+<footer>
+  Based on TerraFirmaGreg ·
+  Data sourced from the <a href="https://github.com/Tidal-Turtle/TerraFirmaGreg-Alloy-Ratios" target="_blank" rel="noopener">TFG-AR repository</a>.
+  Solver runs entirely in your browser.
+</footer>
+
+<script>
+/* ════════════════════════════════════════════════════════════════════════
+   DATA
+   ════════════════════════════════════════════════════════════════════════ */
+
+const INGOT_MB = 144;
+
+const PURITIES = {
+  poor:       { label:'Poor Ore',     mB:24  },
+  normal:     { label:'Normal Ore',   mB:36  },
+  rich:       { label:'Rich Ore',     mB:48  },
+  crushed:    { label:'Crushed Ore',  mB:80  },
+  purified:   { label:'Purified Ore', mB:100 },
+  dust:       { label:'Dust',         mB:144 },
+  small_dust: { label:'Small Dust',   mB:32  },
+};
+
+const TECH_LEVELS = {
+  1:{ label:'Vessel / Pit Kiln',   maxMB: 3024  },
+  2:{ label:'Crucible',            maxMB: 4608  },
+  3:{ label:'Alloy Machine (GT)',  maxMB: 32000 },
+};
+
+// icon colors for SVG generation (Base, Highlight, Shadow, Outline)
+const INGOT_COLORS = {
+  bronze:          ['#c57833', '#e09855', '#8a4b16', '#4a2503'],
+  bismuth_bronze:  ['#5c875e', '#7ea880', '#3b613d', '#1e3820'],
+  black_bronze:    ['#473047', '#6e4f6e', '#291729', '#140814'],
+  rose_gold:       ['#de9887', '#f2bbae', '#b86656', '#59251b'],
+  sterling_silver: ['#d1d6d6', '#f2fcfc', '#98a1a1', '#4b5252'],
+  weak_steel:      ['#848e94', '#aab4b8', '#5b6369', '#2a3136'],
+  red_steel:       ['#8f4040', '#b56060', '#632222', '#2e0a0a'],
+  blue_steel:      ['#466282', '#698aab', '#2c435c', '#152536'],
+  pig_iron:        ['#a38d8d', '#ccb6b6', '#756060', '#362727'],
+  tin_bronze:      ['#cdb968', '#f2db83', '#a38f42', '#4f4214']
+};
+
+function getIngotSVG(id) {
+  const c = INGOT_COLORS[id] || ['#999', '#ccc', '#666', '#222'];
+  const base = c[0], hi = c[1], sh = c[2], out = c[3];
+  return `<svg width="100%" height="100%" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated;">
+    <rect x="6" y="3" width="5" height="1" fill="${out}" />
+    <rect x="4" y="4" width="2" height="1" fill="${out}" />
+    <rect x="11" y="4" width="2" height="1" fill="${out}" />
+    <rect x="3" y="5" width="1" height="1" fill="${out}" />
+    <rect x="13" y="5" width="1" height="1" fill="${out}" />
+    <rect x="2" y="6" width="1" height="3" fill="${out}" />
+    <rect x="14" y="6" width="1" height="3" fill="${out}" />
+    <rect x="3" y="9" width="1" height="1" fill="${out}" />
+    <rect x="13" y="9" width="1" height="1" fill="${out}" />
+    <rect x="4" y="10" width="1" height="1" fill="${out}" />
+    <rect x="12" y="10" width="1" height="1" fill="${out}" />
+    <rect x="5" y="11" width="7" height="1" fill="${out}" />
+
+    <!-- Fill Base -->
+    <rect x="6" y="4" width="5" height="1" fill="${hi}" />
+    <rect x="4" y="5" width="2" height="1" fill="${hi}" />
+    <rect x="6" y="5" width="5" height="1" fill="${base}" />
+    <rect x="11" y="5" width="2" height="1" fill="${base}" />
+
+    <rect x="3" y="6" width="1" height="1" fill="${hi}" />
+    <rect x="4" y="6" width="9" height="1" fill="${base}" />
+    <rect x="13" y="6" width="1" height="1" fill="${sh}" />
+
+    <rect x="3" y="7" width="10" height="1" fill="${base}" />
+    <rect x="13" y="7" width="1" height="1" fill="${sh}" />
+
+    <rect x="3" y="8" width="9" height="1" fill="${base}" />
+    <rect x="12" y="8" width="2" height="1" fill="${sh}" />
+
+    <rect x="4" y="9" width="7" height="1" fill="${base}" />
+    <rect x="11" y="9" width="2" height="1" fill="${sh}" />
+
+    <rect x="5" y="10" width="6" height="1" fill="${sh}" />
+    <rect x="11" y="10" width="1" height="1" fill="${sh}" />
+  </svg>`;
+}
+
+// alloy database  — min/max pct from TFC/TFG in-game alloy info
+const ALLOYS = [
+  {
+    id:'bronze', name:'Bronze',
+    tech:[1,2,3],
+    comps:[
+      {name:'Copper', id:'copper', min:88, max:92},
+      {name:'Tin',    id:'tin',    min: 8, max:12},
+    ],
+  },
+  {
+    id:'bismuth_bronze', name:'Bismuth Bronze',
+    tech:[1,2,3],
+    comps:[
+      {name:'Copper',  id:'copper',  min:50, max:65},
+      {name:'Zinc',    id:'zinc',    min:20, max:30},
+      {name:'Bismuth', id:'bismuth', min:10, max:20},
+    ],
+  },
+  {
+    id:'black_bronze', name:'Black Bronze',
+    tech:[1,2,3],
+    comps:[
+      {name:'Copper', id:'copper', min:50, max:70},
+      {name:'Silver', id:'silver', min:10, max:25},
+      {name:'Gold',   id:'gold',   min:10, max:25},
+    ],
+  },
+  {
+    id:'rose_gold', name:'Rose Gold',
+    tech:[1,2,3],
+    comps:[
+      {name:'Gold',   id:'gold',   min:15, max:30},
+      {name:'Copper', id:'copper', min:70, max:85},
+    ],
+  },
+  {
+    id:'sterling_silver', name:'Sterling Silver',
+    tech:[1,2,3],
+    comps:[
+      {name:'Silver', id:'silver', min:90, max:95},
+      {name:'Copper', id:'copper', min: 5, max:10},
+    ],
+  },
+  {
+    id:'pig_iron', name:'Pig Iron',
+    tech:[2,3],
+    comps:[
+      {name:'Iron',   id:'iron',   min:88, max:92},
+      {name:'Carbon', id:'carbon', min: 4, max: 8},
+      {name:'Sulfur', id:'sulfur', min: 4, max: 8},
+    ],
+  },
+  {
+    id:'weak_steel', name:'Weak Steel',
+    tech:[2,3],
+    comps:[
+      {name:'Wrought Iron',  id:'wrought_iron',  min:88, max:92},
+      {name:'Nickel',        id:'nickel',         min: 4, max: 8},
+      {name:'Black Bronze',  id:'black_bronze',   min: 4, max: 8},
+    ],
+  },
+  {
+    id:'red_steel', name:'Red Steel',
+    tech:[2,3],
+    comps:[
+      {name:'Weak Steel', id:'weak_steel', min:50, max:55},
+      {name:'Rose Gold',  id:'rose_gold',  min:20, max:25},
+      {name:'Nickel',     id:'nickel',     min:20, max:25},
+    ],
+  },
+  {
+    id:'blue_steel', name:'Blue Steel',
+    tech:[2,3],
+    comps:[
+      {name:'Weak Steel',     id:'weak_steel',     min:50, max:55},
+      {name:'Sterling Silver',id:'sterling_silver', min:20, max:25},
+      {name:'Bismuth Bronze', id:'bismuth_bronze',  min:20, max:25},
+    ],
+  },
+];
+
+/* ════════════════════════════════════════════════════════════════════════
+   SOLVER  (port of the 4-step algorithm from TFG-AR)
+   ════════════════════════════════════════════════════════════════════════
+
+   For N components (2 or 3), iterate all integer ore-count combinations
+   within the estimated search range, filter by ratio constraints, then
+   pick the combination that minimises waste mB.
+
+   For the two-component case the i-th ore's range estimation follows the
+   original Python exactly:
+     ore0: floor/ceil from ratio0
+     ore1: derived from (100 − ratio0)
+
+   For three components all ratios are used directly (as in the ore3 branch).
+   We also support a headroom of up to +3 ingots to find feasible solutions
+   when an exact amount can't be achieved.
+════════════════════════════════════════════════════════════════════════ */
+
+function clamp(v,lo,hi){ return Math.max(lo,Math.min(hi,v)) }
+
+function solve(alloy, targetIngots, techLevel, purityMap, useNuggets){
+  const comps  = alloy.comps;
+  const n      = comps.length;
+  const mbArr  = comps.map(c => PURITIES[purityMap[c.id]].mB);
+  const minPct = comps.map(c => c.min / 100);
+  const maxPct = comps.map(c => c.max / 100);
+  const maxMB  = TECH_LEVELS[techLevel].maxMB;
+
+  const tMB = targetIngots * INGOT_MB;
+  if(tMB > maxMB) return {
+    ok:false,
+    msg:`${targetIngots} ingots = ${tMB} mB exceeds the tech level capacity (${maxMB} mB). ` +
+        `Try a higher tech level or a smaller target.`
+  };
+
+  const MAX_HEADROOM = 4;
+
+  for(let headroom = 0; headroom <= MAX_HEADROOM; headroom++){
+    const upperMB = Math.min((targetIngots + headroom) * INGOT_MB, maxMB);
+
+    // ── Step 0: build input components ───────────────────────────────
+    let inputs = [];
+    for(let i=0; i<n; i++){
+      inputs.push({ compIdx: i, mB: mbArr[i], type:'base' });
+      if(useNuggets && mbArr[i] !== 32){
+         // Also allow small dusts for this metal
+         inputs.push({ compIdx: i, mB: 32, type:'small_dust' });
+      }
+    }
+    const numVars = inputs.length;
+
+    // We estimate max pieces for each input
+    let maxPieces = inputs.map(inp => {
+       const maxP = maxPct[inp.compIdx];
+       return Math.ceil((maxP * upperMB) / inp.mB);
+    });
+
+    // ── Step 1: Recursive enumeration ───────────────────────────────
+    let valid = [];
+    let state = new Array(numVars).fill(0);
+
+    function recurse(varIdx, currentMB, compSums) {
+      if(currentMB > upperMB) return;
+
+      if(varIdx === numVars) {
+         if(currentMB >= tMB) {
+            // Check ratios
+            let ok = true;
+            for(let i=0; i<n; i++){
+               const r = compSums[i] / currentMB;
+               if(r < minPct[i] - 1e-9 || r > maxPct[i] + 1e-9){ ok = false; break; }
+            }
+            if(ok) valid.push(state.slice());
+         }
+         return;
+      }
+
+      // Optimize: only iterate up to max possible for this variable
+      const inp = inputs[varIdx];
+      const limit = maxPieces[varIdx];
+
+      for(let count=0; count<=limit; count++){
+         state[varIdx] = count;
+         const added = count * inp.mB;
+         if(currentMB + added > upperMB) {
+            state[varIdx] = 0;
+            break; 
+         }
+         compSums[inp.compIdx] += added;
+         
+         recurse(varIdx + 1, currentMB + added, compSums);
+         
+         compSums[inp.compIdx] -= added;
+         state[varIdx] = 0;
+      }
+    }
+
+    recurse(0, 0, new Array(n).fill(0));
+
+    if(valid.length === 0) continue; // try bigger headroom
+
+    // ── Step 2 is integrated into recurse(), we just need Step 3 ──
+    let best = null, bestWaste = Infinity;
+    for(const comb of valid){
+      const tot = comb.reduce((s, count, i) => s + count * inputs[i].mB, 0);
+      const waste = tot - tMB;
+      
+      // Secondary sort: if waste is same, prefer less small dusts used for cleanliness
+      if(waste < bestWaste){ 
+         bestWaste = waste; 
+         best = comb; 
+      } else if (waste === bestWaste && best !== null) {
+         const curDusts = comb.reduce((s, c, i) => s + (inputs[i].type==='small_dust'?c:0), 0);
+         const bestDusts = best.reduce((s, c, i) => s + (inputs[i].type==='small_dust'?c:0), 0);
+         if(curDusts < bestDusts) best = comb;
+      }
+    }
+
+    // ── Build result ──────────────────────────────────────────────────
+    const totalMB = best.reduce((s, count, i) => s + count * inputs[i].mB, 0);
+    const actualIngots = totalMB / INGOT_MB;
+    
+    // Group back by component
+    let compResults = comps.map(c => ({
+       name: c.name,
+       min: c.min, max: c.max,
+       totalCount: 0,
+       contribMB: 0,
+       items: []
+    }));
+
+    for(let i=0; i<numVars; i++){
+       if(best[i] > 0){
+          const cp = inputs[i].compIdx;
+          compResults[cp].totalCount += best[i];
+          compResults[cp].contribMB += best[i] * inputs[i].mB;
+          
+          if(inputs[i].type === 'small_dust') {
+             compResults[cp].items.push({ label: 'Small Dust', count: best[i], mB_per: 32 });
+          } else {
+             compResults[cp].items.push({ 
+                label: PURITIES[purityMap[comps[cp].id]].label, 
+                count: best[i], 
+                mB_per: inputs[i].mB 
+             });
+          }
+       }
+    }
+
+    compResults.forEach(cr => {
+       cr.ratioPct = +(cr.contribMB / totalMB * 100).toFixed(2);
+    });
+
+    return {
+      ok: true,
+      alloyName: alloy.name,
+      alloyId  : alloy.id,
+      techLabel: TECH_LEVELS[techLevel].label,
+      targetIngots,
+      actualIngots: +actualIngots.toFixed(2),
+      totalMB,
+      wasteMB : bestWaste,
+      perfect : bestWaste === 0,
+      headroom,
+      components: compResults,
+    };
+  }
+
+  return {
+    ok: false,
+    msg:`Couldn't find a valid combination for ${alloy.name} with the chosen ore purities. ` +
+        `Try different purity levels or a larger target.`
+  };
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   STATE
+   ════════════════════════════════════════════════════════════════════════ */
+const S = {
+  alloy    : null,
+  tech     : 1,
+  ingots   : 1,
+  isCustom : false,
+  purity   : {},   // metal_id → purity key
+};
+
+/* ════════════════════════════════════════════════════════════════════════
+   DOM helpers
+   ════════════════════════════════════════════════════════════════════════ */
+const $  = id => document.getElementById(id);
+const show = id => $(id).classList.remove('hidden');
+const hide = id => $(id).classList.add('hidden');
+
+/* ════════════════════════════════════════════════════════════════════════
+   RENDER – Alloy Grid
+   ════════════════════════════════════════════════════════════════════════ */
+function renderGrid(){
+  const grid = $('alloy-grid');
+  grid.innerHTML = '';
+  ALLOYS.forEach(a=>{
+    const card = document.createElement('div');
+    card.className = 'acard';
+    card.dataset.id = a.id;
+    card.setAttribute('tabindex','0');
+    card.setAttribute('aria-label', a.name);
+    card.innerHTML = `
+      <div class="acard-icon" style="width:48px;height:48px;">${getIngotSVG(a.id)}</div>
+      <div class="acard-name">${a.name}</div>
+      <div class="acard-badge">T${a.tech.join('/')}</div>
+    `;
+    card.addEventListener('click', ()=>selectAlloy(a));
+    card.addEventListener('keydown', e=>e.key==='Enter'&&selectAlloy(a));
+    grid.appendChild(card);
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   SELECT ALLOY
+   ════════════════════════════════════════════════════════════════════════ */
+function selectAlloy(a){
+  S.alloy  = a;
+  S.purity = {};
+  a.comps.forEach(c=>{ S.purity[c.id]='normal'; });
+
+  // card highlight
+  document.querySelectorAll('.acard').forEach(c=>c.classList.remove('sel'));
+  document.querySelector(`.acard[data-id="${a.id}"]`).classList.add('sel');
+
+  // header
+  $('ahdr-icon').innerHTML = `<div style="width:64px;height:64px;">${getIngotSVG(a.id)}</div>`;
+  $('ahdr-name').textContent = a.name;
+  $('ahdr-desc').textContent = a.comps.map(c=>`${c.name} (${c.min}–${c.max}%)`).join(' · ');
+  show('alloy-hdr'); hide('hint');
+
+  // tech pills
+  updateTechPills();
+
+  // reset tech if current tech not available for this alloy
+  if(!a.tech.includes(S.tech)){
+    S.tech = a.tech[0];
+    document.querySelectorAll('#tech-pills .pill').forEach(p=>{
+      p.classList.toggle('on', +p.dataset.tl === S.tech);
+    });
+  }
+
+  // purity rows
+  buildPurityRows(a);
+
+  // show sections
+  show('tech-sec'); show('amt-sec'); show('purity-sec'); show('calc-sec');
+  hide('results'); hide('err');
+  $('results').innerHTML = '';
+
+  updateCapHint();
+}
+
+function updateTechPills(){
+  const avail = new Set(S.alloy.tech);
+  document.querySelectorAll('#tech-pills .pill').forEach(p=>{
+    const t = +p.dataset.tl;
+    p.classList.toggle('off', !avail.has(t));
+    p.classList.toggle('on',   t === S.tech && avail.has(t));
+  });
+}
+
+function updateCapHint(){
+  const lvl = TECH_LEVELS[S.tech];
+  $('cap-hint').textContent = lvl ? `${lvl.label} — max ${lvl.maxMB.toLocaleString()} mB` : '';
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   PURITY ROWS
+   ════════════════════════════════════════════════════════════════════════ */
+function buildPurityRows(a){
+  const wrap = $('prows');
+  wrap.innerHTML='';
+  a.comps.forEach(c=>{
+    const row = document.createElement('div');
+    row.className='prow';
+    const lbl = document.createElement('div');
+    lbl.className='prow-name'; lbl.textContent=c.name;
+    row.appendChild(lbl);
+    const pills = document.createElement('div');
+    pills.className='ppills';
+    Object.entries(PURITIES).forEach(([key,p])=>{
+      const btn = document.createElement('button');
+      btn.className='ppill'+(key==='normal'?' on':'');
+      btn.textContent=`${p.label} (${p.mB} mB)`;
+      btn.addEventListener('click',()=>{
+        pills.querySelectorAll('.ppill').forEach(b=>b.classList.remove('on'));
+        btn.classList.add('on');
+        S.purity[c.id]=key;
+      });
+      pills.appendChild(btn);
+    });
+    row.appendChild(pills);
+    wrap.appendChild(row);
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   EVENTS
+   ════════════════════════════════════════════════════════════════════════ */
+function bindEvents(){
+  // tech pills
+  $('tech-pills').addEventListener('click', e=>{
+    const p = e.target.closest('.pill[data-tl]');
+    if(!p || p.classList.contains('off')) return;
+    S.tech = +p.dataset.tl;
+    document.querySelectorAll('#tech-pills .pill').forEach(b=>b.classList.remove('on'));
+    p.classList.add('on');
+    updateCapHint();
+  });
+
+  // amount pills
+  $('amt-pills').addEventListener('click', e=>{
+    const p = e.target.closest('.pill[data-amt]');
+    if(!p) return;
+    document.querySelectorAll('#amt-pills .pill').forEach(b=>b.classList.remove('on'));
+    p.classList.add('on');
+    if(p.dataset.amt==='custom'){
+      show('custom-row'); S.ingots=null; S.isCustom=true;
+    } else {
+      hide('custom-row'); S.ingots=+p.dataset.amt; S.isCustom=false;
+    }
+  });
+
+  // custom input
+  $('custom-val').addEventListener('input', ()=>{
+    const v = parseInt($('custom-val').value);
+    S.ingots = (v>=1&&v<=1000)?v:null;
+  });
+
+  // calculate
+  $('calc-btn').addEventListener('click', run);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   RUN
+   ════════════════════════════════════════════════════════════════════════ */
+function run(){
+  if(!S.alloy) return;
+  const ingots = S.ingots;
+  if(!ingots||ingots<1){ showErr('Please enter a valid target (1–1000 ingots).'); return; }
+
+  $('calc-btn').disabled=true;
+  $('calc-btn').textContent='⏳ Solving…';
+  hide('err'); hide('results');
+
+  // small timeout so the browser repaints the button state first
+  setTimeout(()=>{
+    const useNuggets = $('use-nuggets-cb').checked;
+    const res = solve(S.alloy, ingots, S.tech, S.purity, useNuggets);
+    $('calc-btn').disabled=false;
+    $('calc-btn').textContent='⚗️ Calculate Ratios';
+    if(!res.ok){ showErr(res.msg); return; }
+    renderResults(res);
+  }, 20);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   RENDER RESULTS
+   ════════════════════════════════════════════════════════════════════════ */
+function renderResults(r){
+  const badge = r.perfect
+    ? `<span class="badge badge-perfect">✨ Zero Waste</span>`
+    : `<span class="badge badge-waste">~${r.wasteMB} mB lost</span>`;
+
+  const stats = [
+    {v:r.actualIngots,  l:'Ingots produced'},
+    {v:`${r.totalMB} mB`, l:'Total metal'},
+    {v:r.wasteMB===0?'None':`${r.wasteMB} mB`, l:'Waste'},
+  ].map(s=>`<div class="stat"><div class="stat-val">${s.v}</div><div class="stat-lbl">${s.l}</div></div>`).join('');
+
+  const cards = r.components.map((c,i)=>{
+    const fill = Math.min(100, c.ratioPct).toFixed(1);
+    
+    // Sub-items string
+    const itemsList = c.items.map(it => 
+       `<div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+         <span style="color:var(--t1)">${it.count}x <b>${it.label}</b></span>
+         <span style="color:var(--t2); font-size:0.7rem">${it.mB_per} mB/ea</span>
+       </div>`
+    ).join('');
+
+    return `
+      <div class="ccard" style="animation-delay:${i*0.06}s; display:block;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+           <div>
+             <div class="cname">${c.name}</div>
+             <div class="cpurity">Total ${c.totalCount} items</div>
+           </div>
+           <div class="ccount">${c.contribMB}<span>mB</span></div>
+        </div>
+        <div style="background:rgba(0,0,0,0.2); padding:8px 10px; border-radius:6px; margin-bottom:10px; font-size:0.8rem;">
+           ${itemsList}
+        </div>
+        <div class="rbar-wrap">
+          <div class="rbar-top">
+            <span>Ratio: ${c.ratioPct}%</span>
+            <span>allowed: ${c.min}%–${c.max}%</span>
+          </div>
+          <div class="rbar"><div class="rbar-fill" style="width:${fill}%"></div></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  $('results').innerHTML = `
+    <div class="res-header">
+      <div class="res-title" style="display:flex;align-items:center;gap:6px;">
+        <div style="width:24px;height:24px;">${getIngotSVG(r.alloyId)}</div>
+        ${r.alloyName}
+        <span style="font-size:.72rem;color:var(--t2);font-weight:400;margin-left:5px">· ${r.techLabel}</span>
+      </div>
+      ${badge}
+    </div>
+    <div class="stats">${stats}</div>
+    <div class="comp-list">${cards}</div>
+  `;
+  show('results');
+
+  // animate ratio bars after they're in the DOM
+  requestAnimationFrame(()=>{
+    document.querySelectorAll('.rbar-fill').forEach(b=>{
+      const w = b.style.width;
+      b.style.width='0%';
+      requestAnimationFrame(()=>{ b.style.width=w; });
+    });
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   ERROR
+   ════════════════════════════════════════════════════════════════════════ */
+function showErr(msg){
+  $('err').textContent=`⚠️ ${msg}`;
+  show('err');
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   INIT
+   ════════════════════════════════════════════════════════════════════════ */
+renderGrid();
+bindEvents();
+</script>
+</body>
+</html>
