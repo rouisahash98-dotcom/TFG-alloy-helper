@@ -274,8 +274,12 @@ footer a:hover{text-decoration:underline}
       
       <div class="csec" style="margin-top:12px">
         <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;cursor:pointer;color:var(--t2);">
-          <input type="checkbox" id="use-nuggets-cb" style="accent-color:var(--acc);width:16px;height:16px;">
+          <input type="checkbox" id="use-dusts-cb" style="accent-color:var(--acc);width:16px;height:16px;">
           <span>Allow Small Dusts (32 mB) to achieve zero waste</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;cursor:pointer;color:var(--t2);margin-top:4px;">
+          <input type="checkbox" id="use-nuggets-cb" style="accent-color:var(--acc);width:16px;height:16px;">
+          <span>Allow Nuggets (16 mB) to achieve zero waste</span>
         </label>
       </div>
     </div>
@@ -315,12 +319,13 @@ const PURITIES = {
   purified:   { label:'Purified Ore', mB:100 },
   dust:       { label:'Dust',         mB:144 },
   small_dust: { label:'Small Dust',   mB:32  },
+  nugget:     { label:'Small Nugget', mB:16  },
 };
 
 const TECH_LEVELS = {
-  1:{ label:'Vessel / Pit Kiln',   maxMB: 3024  },
-  2:{ label:'Crucible',            maxMB: 4608  },
-  3:{ label:'Alloy Machine (GT)',  maxMB: 32000 },
+  1:{ label:'Vessel / Pit Kiln',   maxMB: 3024,  maxSlots: 4 },
+  2:{ label:'Crucible',            maxMB: 4608,  maxSlots: 9 },
+  3:{ label:'Alloy Machine (GT)',  maxMB: 32000, maxSlots: 9 },
 };
 
 // icon colors for SVG generation (Base, Highlight, Shadow, Outline)
@@ -480,13 +485,14 @@ const ALLOYS = [
 
 function clamp(v,lo,hi){ return Math.max(lo,Math.min(hi,v)) }
 
-function solve(alloy, targetIngots, techLevel, purityMap, useNuggets){
+function solve(alloy, targetIngots, techLevel, purityMap, useSmallDusts, useNuggets, minimizeMap){
   const comps  = alloy.comps;
   const n      = comps.length;
   const mbArr  = comps.map(c => PURITIES[purityMap[c.id]].mB);
   const minPct = comps.map(c => c.min / 100);
   const maxPct = comps.map(c => c.max / 100);
   const maxMB  = TECH_LEVELS[techLevel].maxMB;
+  const maxSlots = TECH_LEVELS[techLevel].maxSlots;
 
   const tMB = targetIngots * INGOT_MB;
   if(tMB > maxMB) return {
@@ -504,9 +510,13 @@ function solve(alloy, targetIngots, techLevel, purityMap, useNuggets){
     let inputs = [];
     for(let i=0; i<n; i++){
       inputs.push({ compIdx: i, mB: mbArr[i], type:'base' });
-      if(useNuggets && mbArr[i] !== 32){
+      if(useSmallDusts && mbArr[i] !== 32){
          // Also allow small dusts for this metal
          inputs.push({ compIdx: i, mB: 32, type:'small_dust' });
+      }
+      if(useNuggets && mbArr[i] !== 16){
+         // Also allow nuggets for this metal
+         inputs.push({ compIdx: i, mB: 16, type:'nugget' });
       }
     }
     const numVars = inputs.length;
@@ -532,7 +542,15 @@ function solve(alloy, targetIngots, techLevel, purityMap, useNuggets){
                const r = compSums[i] / currentMB;
                if(r < minPct[i] - 1e-9 || r > maxPct[i] + 1e-9){ ok = false; break; }
             }
-            if(ok) valid.push(state.slice());
+            if(ok) {
+               let slotsUsed = 0;
+               for(let v=0; v<numVars; v++){
+                  if(state[v] > 0) slotsUsed += Math.ceil(state[v] / 64);
+               }
+               if(slotsUsed <= maxSlots) {
+                  valid.push(state.slice());
+               }
+            }
          }
          return;
       }
@@ -561,20 +579,28 @@ function solve(alloy, targetIngots, techLevel, purityMap, useNuggets){
 
     if(valid.length === 0) continue; // try bigger headroom
 
-    // ── Step 2 is integrated into recurse(), we just need Step 3 ──
-    let best = null, bestWaste = Infinity;
+    let best = null, bestScore = Infinity, bestWaste = Infinity;
     for(const comb of valid){
       const tot = comb.reduce((s, count, i) => s + count * inputs[i].mB, 0);
       const waste = tot - tMB;
       
-      // Secondary sort: if waste is same, prefer less small dusts used for cleanliness
-      if(waste < bestWaste){ 
-         bestWaste = waste; 
+      // Secondary sort: if waste is same, prefer less dusts/nuggets used for cleanliness
+      const dusts = comb.reduce((s, c, i) => s + (inputs[i].type==='small_dust'||inputs[i].type==='nugget'?c:0), 0);
+      let minimizePenalty = 0;
+      for(let i=0; i<numVars; i++){
+          const compId = comps[inputs[i].compIdx].id;
+          if(minimizeMap && minimizeMap[compId]){
+             minimizePenalty += comb[i] * inputs[i].mB;
+          }
+      }
+
+      // Score: Waste takes ultimate priority (1M factor). Minimize resources (10 factor). Dusts (1 factor).
+      const score = (waste * 1000000) + (minimizePenalty * 10) + dusts;
+
+      if(score < bestScore){ 
+         bestScore = score;
+         bestWaste = waste;
          best = comb; 
-      } else if (waste === bestWaste && best !== null) {
-         const curDusts = comb.reduce((s, c, i) => s + (inputs[i].type==='small_dust'?c:0), 0);
-         const bestDusts = best.reduce((s, c, i) => s + (inputs[i].type==='small_dust'?c:0), 0);
-         if(curDusts < bestDusts) best = comb;
       }
     }
 
@@ -599,6 +625,8 @@ function solve(alloy, targetIngots, techLevel, purityMap, useNuggets){
           
           if(inputs[i].type === 'small_dust') {
              compResults[cp].items.push({ label: 'Small Dust', count: best[i], mB_per: 32 });
+          } else if(inputs[i].type === 'nugget') {
+             compResults[cp].items.push({ label: 'Small Nugget', count: best[i], mB_per: 16 });
           } else {
              compResults[cp].items.push({ 
                 label: PURITIES[purityMap[comps[cp].id]].label, 
@@ -644,6 +672,7 @@ const S = {
   ingots   : 1,
   isCustom : false,
   purity   : {},   // metal_id → purity key
+  minimize : {},   // metal_id → boolean
 };
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -682,7 +711,8 @@ function renderGrid(){
 function selectAlloy(a){
   S.alloy  = a;
   S.purity = {};
-  a.comps.forEach(c=>{ S.purity[c.id]='normal'; });
+  S.minimize = {};
+  a.comps.forEach(c=>{ S.purity[c.id]='normal'; S.minimize[c.id]=false; });
 
   // card highlight
   document.querySelectorAll('.acard').forEach(c=>c.classList.remove('sel'));
@@ -739,9 +769,31 @@ function buildPurityRows(a){
   a.comps.forEach(c=>{
     const row = document.createElement('div');
     row.className='prow';
+    const lblWrap = document.createElement('div');
+    lblWrap.style.display = 'flex';
+    lblWrap.style.justifyContent = 'space-between';
+    lblWrap.style.alignItems = 'center';
+
     const lbl = document.createElement('div');
-    lbl.className='prow-name'; lbl.textContent=c.name;
-    row.appendChild(lbl);
+    lbl.className='prow-name'; 
+    lbl.textContent=c.name;
+
+    const minCb = document.createElement('label');
+    minCb.style.fontSize = '0.72rem';
+    minCb.style.color = 'var(--t2)';
+    minCb.style.cursor = 'pointer';
+    minCb.style.display = 'flex';
+    minCb.style.alignItems = 'center';
+    minCb.style.gap = '4px';
+    minCb.innerHTML = `<input type="checkbox" style="accent-color:var(--acc)" ${S.minimize[c.id]?'checked':''}> ⭐ Minimize`;
+    minCb.querySelector('input').addEventListener('change', (e) => {
+       S.minimize[c.id] = e.target.checked;
+    });
+
+    lblWrap.appendChild(lbl);
+    lblWrap.appendChild(minCb);
+    row.appendChild(lblWrap);
+
     const pills = document.createElement('div');
     pills.className='ppills';
     Object.entries(PURITIES).forEach(([key,p])=>{
@@ -811,8 +863,9 @@ function run(){
 
   // small timeout so the browser repaints the button state first
   setTimeout(()=>{
+    const useSmallDusts = $('use-dusts-cb').checked;
     const useNuggets = $('use-nuggets-cb').checked;
-    const res = solve(S.alloy, ingots, S.tech, S.purity, useNuggets);
+    const res = solve(S.alloy, ingots, S.tech, S.purity, useSmallDusts, useNuggets, S.minimize);
     $('calc-btn').disabled=false;
     $('calc-btn').textContent='⚗️ Calculate Ratios';
     if(!res.ok){ showErr(res.msg); return; }
