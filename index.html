@@ -880,7 +880,7 @@ function buildPurityRows(a){
     Object.entries(PURITIES).forEach(([key,p])=>{
       const btn = document.createElement('button');
       btn.className='ppill'+(S.purity[c.id]===key?' on':'');
-      const actualMB = calcMB(p.baseMB, S.source[c.id]);
+      const actualMB = calcMB(p.baseMB, key === 'nugget' ? 100 : S.source[c.id]);
       btn.textContent=`${p.label} (${actualMB} mB)`;
       btn.addEventListener('click',()=>{
         pills.querySelectorAll('.ppill').forEach(b=>b.classList.remove('on'));
