@@ -383,7 +383,9 @@ const INGOT_COLORS = {
   red_steel:       ['#8f4040', '#b56060', '#632222', '#2e0a0a'],
   blue_steel:      ['#466282', '#698aab', '#2c435c', '#152536'],
   pig_iron:        ['#a38d8d', '#ccb6b6', '#756060', '#362727'],
-  tin_bronze:      ['#cdb968', '#f2db83', '#a38f42', '#4f4214']
+  tin_bronze:      ['#cdb968', '#f2db83', '#a38f42', '#4f4214'],
+  brass:           ['#EBC43B', '#FCE979', '#C59A24', '#6B5412'],
+  black_steel:     ['#333333', '#555555', '#1A1A1A', '#000000']
 };
 
 function getIngotSVG(c){
@@ -395,31 +397,34 @@ function getIngotSVG(c){
      '4': cols[3] || cols[2], // Dark Edge
      'O': '#181818' // Outline
   };
+  // centered 16x13 art in 20x20 space
   const art = [
-    "          OOO   ",
-    "        OO111O  ",
-    "      OO21111O  ",
-    "    OO2221123O  ",
-    "  OO222221233O  ",
-    " O22222222333O  ",
-    "O222222233333O  ",
-    "O42222333333O   ",
-    "O4423333333O    ",
-    "O44433333OO     ",
-    " O44333OO       ",
-    "  OO4OO         ",
-    "    O           "
+    "          OOO       ",
+    "        OO111O      ",
+    "      OO21111O      ",
+    "    OO2221123O      ",
+    "  OO222221233O      ",
+    " O22222222333O      ",
+    "O222222233333O      ",
+    "O42222333333O       ",
+    "O4423333333O        ",
+    "O44433333OO         ",
+    " O44333OO           ",
+    "  OO4OO             ",
+    "    O               "
   ];
   let rects = '';
+  const offsetX = 2; // (20-16)/2
+  const offsetY = 3; // (20-13)/2
   for(let y=0; y<art.length; y++){
     for(let x=0; x<art[y].length; x++){
       const p = art[y][x];
       if(p !== ' '){
-         rects += `<rect x="${x+1}" y="${y+1}" width="1" height="1" fill="${pal[p]}"/>`;
+         rects += `<rect x="${x+offsetX}" y="${y+offsetY}" width="1" height="1" fill="${pal[p]}"/>`;
       }
     }
   }
-  return `<svg width="24" height="24" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+  return `<svg width="100%" height="100%" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
     ${rects}
   </svg>`;
 }
@@ -502,6 +507,23 @@ const ALLOYS = [
       {name:'Weak Steel',     id:'weak_steel',     min:50, max:55},
       {name:'Sterling Silver',id:'sterling_silver', min:20, max:25},
       {name:'Bismuth Bronze', id:'bismuth_bronze',  min:20, max:25},
+    ],
+  },
+  {
+    id:'brass', name:'Brass',
+    tech:[1,2,3],
+    comps:[
+      {name:'Copper', id:'copper', min:70, max:80},
+      {name:'Zinc',    id:'zinc',    min:20, max:30},
+    ],
+  },
+  {
+    id:'black_steel', name:'Black Steel',
+    tech:[2,3],
+    comps:[
+      {name:'Steel',       id:'steel',        min:50, max:70},
+      {name:'Black Bronze',id:'black_bronze', min:10, max:25},
+      {name:'Nickel',      id:'nickel',       min:10, max:25},
     ],
   },
 ];
@@ -771,7 +793,7 @@ function selectAlloy(a){
   document.querySelector(`.acard[data-id="${a.id}"]`).classList.add('sel');
 
   // header
-  $('ahdr-icon').innerHTML = `<div style="width:64px;height:64px;">${getIngotSVG(a.id)}</div>`;
+  $('ahdr-icon').innerHTML = `<div style="width:80px;height:80px;">${getIngotSVG(a.id)}</div>`;
   $('ahdr-name').textContent = a.name;
   $('ahdr-desc').textContent = a.comps.map(c=>`${c.name} (${c.min}–${c.max}%)`).join(' · ');
   show('alloy-hdr'); hide('hint');
@@ -1006,7 +1028,7 @@ function renderResults(r){
   $('results').innerHTML = `
     <div class="res-header">
       <div class="res-title" style="display:flex;align-items:center;gap:6px;">
-        <div style="width:24px;height:24px;">${getIngotSVG(r.alloyId)}</div>
+        <div style="width:32px;height:32px;">${getIngotSVG(r.alloyId)}</div>
         ${r.alloyName}
         <span style="font-size:.72rem;color:var(--t2);font-weight:400;margin-left:5px">· ${r.techLabel}</span>
       </div>
