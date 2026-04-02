@@ -59,6 +59,16 @@ main{
 }
 @media(max-width:820px){main{grid-template-columns:1fr}}
 
+/* smithing specific layout override */
+#smith-tool{grid-template-columns:360px 1fr;gap:24px}
+@media(max-width:1000px){#smith-tool{grid-template-columns:1fr}}
+
+/* scrollbar */
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:10px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.2)}
+
 /* ═══ Panel ════════════════════════════════════════════════════════════ */
 .panel{
   background:var(--surf);border:1px solid var(--bdr);border-radius:var(--rl);
@@ -198,6 +208,86 @@ main{
   color:var(--red);border-radius:var(--rsm);padding:11px 15px;font-size:.83rem;
 }
 
+/* tabs */
+.tabs{
+  max-width:1300px;margin:0 auto;padding:0 24px;margin-top:20px;
+  display:flex;gap:4px;
+}
+.tab-btn{
+  cursor:pointer;border:1px solid var(--bdr);background:var(--surf);
+  color:var(--t2);padding:10px 24px;font:600 .85rem 'Outfit';
+  border-radius:var(--r) var(--r) 0 0;border-bottom:none;
+  transition:var(--ease);position:relative;
+}
+.tab-btn:hover{background:var(--surf-hi);color:var(--t1)}
+.tab-btn.active{
+  background:var(--bg2);color:var(--acc);border-color:var(--bdr-hi);
+  box-shadow:inset 0 3px 0 var(--acc);
+}
+.tab-btn.active::after{
+  content:'';position:absolute;bottom:-1px;left:0;right:0;height:2px;background:var(--bg2);z-index:2;
+}
+
+/* blacksmithing specifics */
+.bs-input-group{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.bs-item{
+  background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);
+  padding:14px;display:flex;justify-content:space-between;align-items:center;
+  animation:slideup .25s ease both;
+}
+.bs-item-val{font-weight:700;color:var(--acc);font-family:monospace;font-size:1rem}
+.bs-del{
+  background:rgba(240,113,113,.1);color:var(--red);border:1px solid rgba(240,113,113,.2);
+  padding:4px 10px;border-radius:var(--rsm);cursor:pointer;font:600 .7rem 'Outfit';transition:var(--ease);
+}
+.bs-del:hover{background:var(--red);color:#fff}
+
+.bs-icon-col{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:64px}
+.bs-icon-label{font-size:.75rem;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:0.04em}
+
+/* items */
+.bs-item{
+  background:var(--surf); border:1px solid var(--bdr); border-radius:12px;
+  padding:24px; margin-bottom:16px; display:flex; align-items:center; gap:20px;
+  transition:var(--ease);
+}
+.bs-item.minimized{
+  padding:12px 16px; opacity:0.6; cursor:pointer; gap:12px;
+  border-style:dashed; background:rgba(255,255,255,0.02);
+}
+.bs-item.minimized:hover{opacity:1; background:rgba(255,255,255,0.05); transform:translateX(4px)}
+
+.bs-item.minimized .bs-icon-col{min-width:32px; gap:0}
+.bs-item.minimized .bs-icon-label{display:none}
+.bs-item.minimized .bs-del{opacity:.3}
+.bs-del:hover{opacity:1}
+
+#bs-list{max-height:calc(100vh - 200px); overflow-y:auto; padding-right:8px;}
+
+/* picker */
+.bs-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px}
+.bs-pick-btn{
+  background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);
+  padding:8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;
+  transition:var(--ease);
+}
+.bs-pick-btn:hover{background:var(--surf-hi);border-color:var(--bdr-hi);transform:translateY(-2px)}
+.bs-pick-btn:active{transform:translateY(0)}
+
+.bs-preset-bar{
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px;
+  background:rgba(0,0,0,.2);border:1px solid var(--bdr);border-radius:var(--r);
+  min-height:54px;
+}
+.bs-preset-item{cursor:pointer;position:relative;transition:var(--ease)}
+.bs-preset-item:hover{filter:brightness(1.2) scale(1.05)}
+.bs-preset-item::after{
+  content:'✕';position:absolute;top:-4px;right:-4px;background:var(--red);
+  color:#fff;font-size:10px;width:14px;height:14px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;opacity:0;transition:var(--ease);
+}
+.bs-preset-item:hover::after{opacity:1}
+
 .hidden{display:none!important}
 
 /* footer */
@@ -218,7 +308,12 @@ footer a:hover{text-decoration:underline}
   </div>
 </header>
 
-<main>
+<nav class="tabs">
+  <button class="tab-btn active" data-tab="alloy">⚗️ Alloy Calculator</button>
+  <button class="tab-btn" data-tab="smith">🔨 Blacksmithing</button>
+</nav>
+
+<main id="alloy-tool">
   <!-- ── Alloy picker ────────────────────────────────── -->
   <section class="panel">
     <div class="panel-label">Select Alloy</div>
@@ -295,6 +390,56 @@ footer a:hover{text-decoration:underline}
     <!-- error -->
     <div id="err" class="err hidden"></div>
 
+  </section>
+</main>
+
+<main id="smith-tool" class="hidden">
+  <!-- Input Panel -->
+  <section class="panel cfg">
+    <div class="panel-label">Smithing Sequence Finder</div>
+    
+    <div class="bs-input-group">
+      <div class="csec">
+        <div class="slabel">Target Value</div>
+        <input type="number" id="bs-target" class="num-input" style="width:100%" value="113"/>
+      </div>
+      <div class="csec">
+        <div class="slabel">Combination Name</div>
+        <input type="text" id="bs-name" class="num-input" style="width:100%" value="My Combination"/>
+      </div>
+    </div>
+
+    <div class="csec">
+      <div class="slabel">Add Actions to Sequence</div>
+      <div class="bs-picker" id="bs-picker"></div>
+    </div>
+
+    <div class="csec">
+      <div class="slabel">Current Sequence (Click to remove)</div>
+      <div class="bs-preset-bar" id="bs-preset-bar"></div>
+    </div>
+
+    <div class="csec">
+      <button class="calc-btn" id="bs-calc-btn">🔨 Find Combination</button>
+    </div>
+
+    <div id="bs-results" class="results hidden"></div>
+    <div id="bs-err" class="err hidden"></div>
+
+    <div id="bs-legend" class="hint" style="padding:10px; border-top:1px solid var(--bdr); flex-direction:row; justify-content:space-around; flex-wrap:wrap; gap:10px;">
+      <div style="display:flex;align-items:center;gap:5px;font-size:.65rem;color:var(--t2);">🔨 Hits & Draw (Red)</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:.65rem;color:var(--t2);">⚒️ Smithing (Green)</div>
+    </div>
+  </section>
+
+  <!-- Saved Panel -->
+  <section class="panel">
+    <div class="panel-label">Saved Combinations</div>
+    <div id="bs-list" class="comp-list"></div>
+    <div id="bs-empty" class="hint">
+      <div class="hint-icon">📜</div>
+      <p>No saved sequences yet.</p>
+    </div>
   </section>
 </main>
 
@@ -741,6 +886,7 @@ const S = {
   purity   : {},   // metal_id → purity key
   minimize : {},   // metal_id → boolean
   source   : {},   // metal_id → percent (e.g. 90)
+  smithPresets: ["Draw", "Any Hit", "Any Hit"], // Default sequence
 };
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -920,6 +1066,21 @@ function buildPurityRows(a){
    EVENTS
    ════════════════════════════════════════════════════════════════════════ */
 function bindEvents(){
+  // Tab switching
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const tab = btn.dataset.tab;
+      if (tab === 'alloy') {
+        show('alloy-tool'); hide('smith-tool');
+      } else {
+        hide('alloy-tool'); show('smith-tool');
+        renderSmithList();
+      }
+    });
+  });
+
   // tech pills
   $('tech-pills').addEventListener('click', e=>{
     const p = e.target.closest('.pill[data-tl]');
@@ -951,6 +1112,11 @@ function bindEvents(){
 
   // calculate
   $('calc-btn').addEventListener('click', run);
+
+  // Blacksmithing events
+  $('bs-calc-btn').addEventListener('click', runSmith);
+  renderSmithPicker();
+  renderPresetBar();
 }
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -1058,10 +1224,265 @@ function showErr(msg){
 }
 
 /* ════════════════════════════════════════════════════════════════════════
+   BLACKSMITHING HELPERS
+   ════════════════════════════════════════════════════════════════════════ */
+const SMITH_ACTIONS = {
+  "Light Hit": -3, "Medium Hit": -6, "Heavy Hit": -9,
+  "Draw": -15, "Punch": 2, "Bend": 7, "Upset": 13, "Shrink": 16
+};
+const SMITH_VALS = [-3, -6, -9, -15, 2, 7, 13, 16];
+const HIT_OPTIONS = ["Light Hit", "Medium Hit", "Heavy Hit"];
+
+let savedSmith = JSON.parse(localStorage.getItem("savedSmith")) || [];
+
+function getSmithSVG(action, size=32){
+  const data = {
+    "Light Hit":  { val: -3,  bg: "#78e0ff" },
+    "Medium Hit": { val: -6,  bg: "#5c99d6" },
+    "Heavy Hit":  { val: -9,  bg: "#3b4294" },
+    "Draw":        { val: -15, bg: "#8c26ff" },
+    "Punch":       { val: 2,   bg: "#a2db6e" },
+    "Bend":        { val: 7,   bg: "#f7d96a" },
+    "Upset":       { val: 13,  bg: "#d68a5c" },
+    "Shrink":      { val: 16,  bg: "#b52b2b" }
+  };
+  const d = data[action] || { val: 0, bg: "#555" };
+  const valText = d.val > 0 ? `+${d.val}` : `${d.val}`;
+  
+  let content = '';
+  content += `<rect x="0.5" y="0.5" width="15" height="15" fill="none" stroke="rgba(0,0,0,0.4)" stroke-width="1"/>`;
+
+  if(action.includes("Hit")){
+    content += `<rect x="3" y="3" width="5" height="5" fill="#fff" stroke="#000" stroke-width="0.8"/>`;
+    content += `<rect x="8" y="5" width="5" height="1.5" fill="#aaa" stroke="#000" stroke-width="0.5"/>`;
+    const dots = action === "Light Hit" ? 1 : action === "Medium Hit" ? 2 : 3;
+    const dotPos = [[5,11], [8,11], [5,13.5]];
+    for(let i=0; i<dots; i++){
+      content += `<circle cx="${dotPos[i][0]}" cy="${dotPos[i][1]}" r="1.3" fill="#fff" stroke="#000" stroke-width="0.5"/>`;
+    }
+  } else if(action === "Draw"){
+    content += `<path d="M3 8 L13 8 L13 6 L10 6 L3 8 Z" fill="#fff" stroke="#000" stroke-width="0.8" transform="translate(0,1)"/>`;
+  } else if(action === "Punch"){
+    content += `<path d="M3 6 L6 6 L6 4 L10 4 L10 6 L13 6 L13 10 L3 10 Z" fill="#fff" stroke="#000" stroke-width="0.8"/>`;
+  } else if(action === "Bend"){
+    content += `<path d="M4 4 L10 4 L10 10 L13 10 L13 13 L7 13 L7 7 L4 7 Z" fill="#fff" stroke="#000" stroke-width="0.8" transform="scale(0.9) translate(1,1)"/>`;
+  } else if(action === "Upset"){
+    content += `<path d="M3 6 L6 6 L13 4 L13 12 L6 10 L3 10 Z" fill="#fff" stroke="#000" stroke-width="0.8"/>`;
+  } else if(action === "Shrink"){
+    content += `<path d="M3 9 L11 9 L13 5 L13 11 L3 11 Z" fill="#fff" stroke="#000" stroke-width="0.8"/>`;
+  }
+  content += `<text x="15" y="15" text-anchor="end" font-family="monospace" font-size="5" font-weight="900" fill="#fff" style="paint-order:stroke; stroke:#000; stroke-width:1.5px; stroke-linecap:round; stroke-linejoin:round;">${valText}</text>`;
+  content += `<text x="15" y="15" text-anchor="end" font-family="monospace" font-size="5" font-weight="900" fill="#fff">${valText}</text>`;
+
+  return `<svg width="${size}" height="${size}" viewBox="0 0 16 16" style="background:${d.bg}; border:1px solid rgba(255,255,255,0.3); border-radius:1px; display:block; image-rendering:pixelated;">
+    ${content}
+  </svg>`;
+}
+
+function runSmith() {
+  const target = parseInt($('bs-target').value);
+  const presets = S.smithPresets;
+  const name = $('bs-name').value;
+  const btn = $('bs-calc-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Solving…';
+  hide('bs-err'); hide('bs-results');
+
+  setTimeout(() => {
+    const resolvedPresets = presets.map(p => p === "Any Hit" ? findBestHit(target) : p);
+    const res = solveSmith(SMITH_VALS, target, resolvedPresets);
+    btn.disabled = false;
+    btn.textContent = '🔨 Find Combination';
+    if (res.success) {
+      savedSmith.push({ name, steps: res.steps });
+      localStorage.setItem("savedSmith", JSON.stringify(savedSmith));
+      renderSmithList();
+      showSuccess(res.steps);
+    } else {
+      showSmithErr("No combination found!");
+    }
+  }, 50);
+}
+
+function solveSmith(nums, target, presets) {
+  const SMITH_NAME_TO_VAL = (n) => SMITH_ACTIONS[n] || 0;
+  const presetSum = presets.reduce((s, p) => s + SMITH_NAME_TO_VAL(p), 0);
+  const newTarget = target - presetSum;
+  if (newTarget === 0) return { success: true, steps: presets };
+  const queue = [{ sum: 0, steps: [] }];
+  const visited = new Set([0]);
+  while (queue.length > 0) {
+    const { sum, steps } = queue.shift();
+    if (sum === newTarget) return { success: true, steps: [...steps, ...presets] };
+    for (const n of nums) {
+      const nextSum = sum + n;
+      if (!visited.has(nextSum) && Math.abs(nextSum) < 1000) { 
+        visited.add(nextSum);
+        queue.push({ sum: nextSum, steps: [...steps, SMITH_VAL_TO_NAME(n)] });
+      }
+    }
+  }
+  return { success: false };
+}
+
+function findBestHit(target) {
+  let best = "Light Hit", minLen = Infinity;
+  HIT_OPTIONS.forEach(opt => {
+    const res = solveSmith(SMITH_VALS, target - SMITH_ACTIONS[opt], []);
+    if (res.success && res.steps.length < minLen) { minLen = res.steps.length; best = opt; }
+  });
+  return best;
+}
+
+function SMITH_VAL_TO_NAME(v) {
+  return Object.keys(SMITH_ACTIONS).find(key => SMITH_ACTIONS[key] === v) || v;
+}
+
+function renderSmithPicker() {
+  const picker = $('bs-picker');
+  if(!picker) return;
+  picker.innerHTML = '';
+  const actions = [...Object.keys(SMITH_ACTIONS), "Any Hit"];
+  actions.forEach(a => {
+    const btn = document.createElement('div');
+    btn.className = 'bs-pick-btn';
+    let icon = a === "Any Hit" 
+      ? `<svg width="24" height="24" viewBox="0 0 16 16" style="background:#555; border:1.5px solid #333; border-radius:4px; display:block;"><text x="8" y="11" text-anchor="middle" font-weight="900" font-size="10" fill="#fff">?</text></svg>`
+      : getSmithSVG(a, 24);
+    btn.innerHTML = `${icon}<div style="font-size:0.55rem; font-weight:700; color:var(--t2); text-transform:uppercase;">${a.replace(' Hit','')}</div>`;
+    btn.onclick = () => { S.smithPresets.push(a); renderPresetBar(); };
+    picker.appendChild(btn);
+  });
+}
+
+function renderPresetBar() {
+  const bar = $('bs-preset-bar');
+  if(!bar) return;
+  bar.innerHTML = '';
+  if(S.smithPresets.length === 0) {
+    bar.innerHTML = '<span style="font-size:0.7rem; color:var(--t3)">Empty sequence. Click icons above to add.</span>';
+    return;
+  }
+  S.smithPresets.forEach((p, i) => {
+    const item = document.createElement('div');
+    item.className = 'bs-preset-item';
+    item.innerHTML = p === "Any Hit"
+      ? `<svg width="32" height="32" viewBox="0 0 16 16" style="background:#555; border:1px solid #333; border-radius:1px; display:block;"><text x="8" y="11" text-anchor="middle" font-weight="900" font-size="8" fill="#fff">?</text></svg>`
+      : getSmithSVG(p, 32);
+    item.onclick = () => { S.smithPresets.splice(i, 1); renderPresetBar(); };
+    bar.appendChild(item);
+  });
+}
+
+function renderSmithList() {
+  const wrap = $('bs-list');
+  if(!wrap) return;
+  wrap.innerHTML = '';
+  if (savedSmith.length === 0) { show('bs-empty'); return; }
+  hide('bs-empty');
+  savedSmith.forEach((item, idx) => {
+    const card = document.createElement('div');
+    card.className = 'bs-item';
+    const stepsHTML = item.steps.map(s => `
+      <div class="bs-icon-col">
+        ${getSmithSVG(s, 64)}
+        <div class="bs-icon-label">${s.replace(' Hit','')}</div>
+      </div>
+    `).join(' <span style="opacity:.2; font-size:1.5rem; margin-top:24px;">→</span> ');
+    card.innerHTML = `
+      <div style="flex:1">
+        <div style="font-size:.85rem;text-transform:uppercase;color:var(--t2);letter-spacing:0.1em;margin-bottom:16px;font-weight:700">${item.name}</div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">${stepsHTML}</div>
+      </div>
+      <button class="bs-del" onclick="delSmith(${idx})">Delete</button>
+    `;
+    wrap.appendChild(card);
+  });
+}
+
+function delSmith(idx) {
+  if (confirm("Delete this combination?")) {
+    savedSmith.splice(idx, 1);
+    localStorage.setItem("savedSmith", JSON.stringify(savedSmith));
+    renderSmithList();
+  }
+}
+
+function renderSmithList() {
+  const wrap = $('bs-list');
+  if(!wrap) return;
+  wrap.innerHTML = '';
+  if (savedSmith.length === 0) { show('bs-empty'); return; }
+  hide('bs-empty');
+
+  savedSmith.forEach((item, idx) => {
+    const isFeatured = (idx === 0);
+    const card = document.createElement('div');
+    card.className = 'bs-item' + (isFeatured ? ' featured' : ' minimized');
+    
+    const iconSize = isFeatured ? 64 : 32;
+    const stepsHTML = item.steps.map(s => `
+      <div class="bs-icon-col">
+        ${getSmithSVG(s, iconSize)}
+        <div class="bs-icon-label">${s.replace(' Hit','')}</div>
+      </div>
+    `).join(` <span style="opacity:.1; font-size:${isFeatured?1.2:0.8}rem; margin-top:${isFeatured?24:6}px;">→</span> `);
+
+    card.innerHTML = `
+      <div style="flex:1; overflow:hidden">
+        <div style="font-size:${isFeatured?0.85:0.75}rem; text-transform:uppercase; color:var(--${isFeatured?'t1':'t2'}); letter-spacing:0.1em; margin-bottom:${isFeatured?16:4}px; font-weight:700">
+          ${isFeatured ? '🌟 ' : ''}${item.name}
+        </div>
+        <div style="display:flex; align-items:center; gap:${isFeatured?12:6}px; flex-wrap:nowrap; overflow-x:auto; padding-bottom:4px;">
+          ${stepsHTML}
+        </div>
+      </div>
+      <button class="bs-del" onclick="event.stopPropagation(); delSmith(${idx})">Delete</button>
+    `;
+    
+    if(!isFeatured){
+      card.onclick = () => promoteSmith(idx);
+    }
+    
+    wrap.appendChild(card);
+  });
+}
+
+function promoteSmith(idx) {
+  const item = savedSmith.splice(idx, 1)[0];
+  savedSmith.unshift(item);
+  localStorage.setItem("savedSmith", JSON.stringify(savedSmith));
+  renderSmithList();
+}
+
+function showSmithErr(msg) {
+  $('bs-err').textContent = `⚠️ ${msg}`;
+  show('bs-err');
+}
+function showSuccess(steps) {
+  const stepsHTML = steps.map(s => `
+    <div class="bs-icon-col" style="min-width:48px">
+      ${getSmithSVG(s, 48)}
+      <div class="bs-icon-label" style="font-size:0.65rem">${s.replace(' Hit','')}</div>
+    </div>`).join('');
+  $('bs-results').innerHTML = `
+    <div style="display:flex;align-items:center;gap:20px;background:rgba(74,222,128,0.1);padding:18px;border-radius:14px;border:1px solid rgba(74,222,128,0.2)">
+      <div style="color:var(--green);font-size:.95rem;font-weight:800">Sequence Found!</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">${stepsHTML}</div>
+    </div>`;
+  show('bs-results');
+  setTimeout(()=>hide('bs-results'), 6000);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
    INIT
    ════════════════════════════════════════════════════════════════════════ */
 renderGrid();
 bindEvents();
+
+
+// Global scope for onclick handlers
+window.delSmith = delSmith;
 </script>
 </body>
 </html>
