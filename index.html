@@ -1294,7 +1294,7 @@ function runSmith() {
     btn.disabled = false;
     btn.textContent = '🔨 Find Combination';
     if (res.success) {
-      savedSmith.push({ name, steps: res.steps });
+      savedSmith.unshift({ name, steps: res.steps });
       localStorage.setItem("savedSmith", JSON.stringify(savedSmith));
       renderSmithList();
       showSuccess(res.steps);
