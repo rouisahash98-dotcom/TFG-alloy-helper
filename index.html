@@ -242,13 +242,13 @@ main{
 }
 .bs-del:hover{background:var(--red);color:#fff}
 
-.bs-icon-col{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:64px}
+.bs-icon-col{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:48px}
 .bs-icon-label{font-size:.75rem;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:0.04em}
 
 /* items */
 .bs-item{
   background:var(--surf); border:1px solid var(--bdr); border-radius:12px;
-  padding:24px; margin-bottom:16px; display:flex; align-items:center; gap:20px;
+  padding:12px 16px; margin-bottom:8px; display:flex; align-items:center; gap:16px;
   transition:var(--ease);
 }
 .bs-item.minimized{
@@ -262,7 +262,7 @@ main{
 .bs-item.minimized .bs-del{opacity:.3}
 .bs-del:hover{opacity:1}
 
-#bs-list{max-height:calc(100vh - 200px); overflow-y:auto; padding-right:8px;}
+#bs-list{max-height:calc(100vh - 300px); overflow-y:auto; padding-right:8px;}
 
 /* picker */
 .bs-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px}
@@ -287,6 +287,96 @@ main{
   display:flex;align-items:center;justify-content:center;opacity:0;transition:var(--ease);
 }
 .bs-preset-item:hover::after{opacity:1}
+
+/* ═══ Saved panel header ═══════════════════════════════════════════════ */
+.bs-saved-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.bs-folder-btn{
+  cursor:pointer;border:1px solid var(--bdr);background:var(--surf);color:var(--t2);
+  border-radius:var(--rsm);padding:5px 11px;font:600 .75rem 'Outfit',sans-serif;
+  display:inline-flex;align-items:center;gap:5px;transition:var(--ease);
+}
+.bs-folder-btn:hover{border-color:var(--bdr-hi);color:var(--t1);background:var(--surf-hi)}
+
+/* ═══ Search bar ════════════════════════════════════════════════════════ */
+.bs-search-wrap{
+  position:relative;display:flex;align-items:center;
+  margin-bottom:14px;
+}
+.bs-search-icon{position:absolute;left:11px;font-size:.9rem;pointer-events:none;opacity:.5}
+.bs-search-input{
+  width:100%;padding:8px 12px 8px 34px;
+  border-radius:var(--rsm);border:1px solid var(--bdr);
+  background:rgba(0,0,0,.35);color:var(--t1);
+  font:400 .85rem 'Outfit',sans-serif;outline:none;
+  transition:border-color var(--ease);
+}
+.bs-search-input:focus{border-color:var(--acc)}
+.bs-search-input::placeholder{color:var(--t3)}
+
+/* ═══ Folder sections ═══════════════════════════════════════════════════ */
+.bs-folder-section{margin-bottom:10px}
+.bs-folder-header{
+  display:flex;align-items:center;gap:8px;
+  padding:7px 10px;border-radius:var(--rsm);
+  background:rgba(255,255,255,.04);border:1px solid var(--bdr);
+  cursor:pointer;user-select:none;transition:var(--ease);
+  margin-bottom:6px;
+}
+.bs-folder-header:hover{background:rgba(255,255,255,.07);border-color:var(--bdr-hi)}
+.bs-folder-chevron{font-size:.75rem;transition:transform .2s;display:inline-block}
+.bs-folder-header.open .bs-folder-chevron{transform:rotate(90deg)}
+.bs-folder-title{flex:1;font-size:.78rem;font-weight:700;color:var(--t1);letter-spacing:.06em}
+.bs-folder-count{font-size:.65rem;color:var(--t3);background:rgba(255,255,255,.06);
+  border-radius:40px;padding:1px 7px}
+.bs-folder-actions{display:flex;gap:5px;opacity:0;transition:opacity var(--ease)}
+.bs-folder-header:hover .bs-folder-actions{opacity:1}
+.bs-folder-action-btn{
+  background:none;border:1px solid var(--bdr);color:var(--t2);
+  border-radius:var(--rsm);padding:2px 7px;font:500 .65rem 'Outfit';cursor:pointer;
+  transition:var(--ease);
+}
+.bs-folder-action-btn:hover{border-color:var(--bdr-hi);color:var(--t1)}
+.bs-folder-action-btn.danger:hover{border-color:var(--red);color:var(--red)}
+.bs-folder-items{padding-left:4px}
+.bs-folder-items.collapsed{display:none}
+
+/* ═══ Card action buttons (rename / move-to-folder) ════════════════════ */
+.bs-card-actions{display:flex;gap:5px;flex-shrink:0}
+.bs-rename-btn,.bs-move-btn{
+  background:rgba(255,255,255,.06);border:1px solid var(--bdr);color:var(--t2);
+  border-radius:var(--rsm);padding:4px 9px;font:600 .68rem 'Outfit';cursor:pointer;
+  transition:var(--ease);
+}
+.bs-rename-btn:hover{border-color:var(--bdr-hi);color:var(--t1)}
+.bs-move-btn:hover{border-color:var(--acc);color:var(--acc)}
+.bs-inline-rename{
+  background:rgba(0,0,0,.4);border:1px solid var(--acc);color:var(--t1);
+  border-radius:var(--rsm);padding:3px 8px;font:700 .8rem 'Outfit';outline:none;
+  width:180px;
+}
+
+/* ═══ Drag-and-drop ════════════════════════════════════════════════════ */
+.bs-item{cursor:grab}
+.bs-item:active{cursor:grabbing}
+.bs-item.drag-over{
+  border-color:var(--acc)!important;
+  background:rgba(240,146,58,.08)!important;
+  box-shadow:0 0 0 2px var(--acc-glow);
+}
+.bs-item.dragging{opacity:.4}
+
+/* ═══ Move-to-folder dropdown ══════════════════════════════════════════ */
+.bs-move-dropdown{
+  position:absolute;right:0;top:100%;margin-top:4px;
+  background:var(--bg2);border:1px solid var(--bdr-hi);border-radius:var(--rsm);
+  min-width:160px;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,.5);
+  overflow:hidden;
+}
+.bs-move-dropdown-item{
+  padding:8px 14px;font-size:.8rem;color:var(--t2);cursor:pointer;transition:var(--ease);
+}
+.bs-move-dropdown-item:hover{background:rgba(255,255,255,.06);color:var(--t1)}
+.bs-move-dropdown-item.active{color:var(--acc)}
 
 .hidden{display:none!important}
 
@@ -434,8 +524,15 @@ footer a:hover{text-decoration:underline}
 
   <!-- Saved Panel -->
   <section class="panel">
-    <div class="panel-label">Saved Combinations</div>
-    <div id="bs-list" class="comp-list"></div>
+    <div class="bs-saved-header">
+      <div class="panel-label" style="margin-bottom:0">Saved Combinations</div>
+      <button class="bs-folder-btn" id="bs-new-folder-btn" title="Create new folder">📁 New Folder</button>
+    </div>
+    <div class="bs-search-wrap">
+      <span class="bs-search-icon">🔍</span>
+      <input type="text" id="bs-search" class="bs-search-input" placeholder="Search combinations…" autocomplete="off"/>
+    </div>
+    <div id="bs-list"></div>
     <div id="bs-empty" class="hint">
       <div class="hint-icon">📜</div>
       <p>No saved sequences yet.</p>
@@ -1115,6 +1212,10 @@ function bindEvents(){
 
   // Blacksmithing events
   $('bs-calc-btn').addEventListener('click', runSmith);
+  $('bs-new-folder-btn').addEventListener('click', createFolder);
+  const searchInput = $('bs-search');
+  if (searchInput) searchInput.addEventListener('input', renderSmithList);
+  
   renderSmithPicker();
   renderPresetBar();
 }
@@ -1233,8 +1334,24 @@ const SMITH_ACTIONS = {
 const SMITH_VALS = [-3, -6, -9, -15, 2, 7, 13, 16];
 const HIT_OPTIONS = ["Light Hit", "Medium Hit", "Heavy Hit"];
 
-let savedSmith = JSON.parse(localStorage.getItem("savedSmith")) || [];
+/* ── Persistent state ── */
+let savedSmith  = JSON.parse(localStorage.getItem("savedSmith"))  || [];
+let smithFolders = JSON.parse(localStorage.getItem("smithFolders")) || [];
 
+// Migrate old records that don't have a folder field
+savedSmith.forEach(item => { if (item.folder === undefined) item.folder = null; });
+
+function persistSmith() {
+  localStorage.setItem("savedSmith",   JSON.stringify(savedSmith));
+  localStorage.setItem("smithFolders", JSON.stringify(smithFolders));
+}
+
+/* ── Drag state ── */
+let dragSrcIdx = null;
+
+/* ════════════════════════════════════════════════════════════════════════
+   SVG ICON HELPERS
+   ════════════════════════════════════════════════════════════════════════ */
 function getSmithSVG(action, size=32){
   const data = {
     "Light Hit":  { val: -3,  bg: "#78e0ff" },
@@ -1248,7 +1365,6 @@ function getSmithSVG(action, size=32){
   };
   const d = data[action] || { val: 0, bg: "#555" };
   const valText = d.val > 0 ? `+${d.val}` : `${d.val}`;
-  
   let content = '';
   content += `<rect x="0.5" y="0.5" width="15" height="15" fill="none" stroke="rgba(0,0,0,0.4)" stroke-width="1"/>`;
 
@@ -1256,7 +1372,7 @@ function getSmithSVG(action, size=32){
     content += `<rect x="3" y="3" width="5" height="5" fill="#fff" stroke="#000" stroke-width="0.8"/>`;
     content += `<rect x="8" y="5" width="5" height="1.5" fill="#aaa" stroke="#000" stroke-width="0.5"/>`;
     const dots = action === "Light Hit" ? 1 : action === "Medium Hit" ? 2 : 3;
-    const dotPos = [[5,11], [8,11], [5,13.5]];
+    const dotPos = [[5,11],[8,11],[5,13.5]];
     for(let i=0; i<dots; i++){
       content += `<circle cx="${dotPos[i][0]}" cy="${dotPos[i][1]}" r="1.3" fill="#fff" stroke="#000" stroke-width="0.5"/>`;
     }
@@ -1279,10 +1395,13 @@ function getSmithSVG(action, size=32){
   </svg>`;
 }
 
+/* ════════════════════════════════════════════════════════════════════════
+   SOLVER
+   ════════════════════════════════════════════════════════════════════════ */
 function runSmith() {
   const target = parseInt($('bs-target').value);
   const presets = S.smithPresets;
-  const name = $('bs-name').value;
+  const name = $('bs-name').value.trim() || 'My Combination';
   const btn = $('bs-calc-btn');
   btn.disabled = true;
   btn.textContent = '⏳ Solving…';
@@ -1293,11 +1412,21 @@ function runSmith() {
     const res = solveSmith(SMITH_VALS, target, resolvedPresets);
     btn.disabled = false;
     btn.textContent = '🔨 Find Combination';
+
     if (res.success) {
-      savedSmith.unshift({ name, steps: res.steps });
-      localStorage.setItem("savedSmith", JSON.stringify(savedSmith));
+      // ── BUG FIX: strip leading negative actions (they do nothing at progress=0) ──
+      let steps = res.steps;
+      while (steps.length > 0 && (SMITH_ACTIONS[steps[0]] !== undefined) && SMITH_ACTIONS[steps[0]] < 0) {
+        steps = steps.slice(1);
+      }
+      if (steps.length === 0) {
+        showSmithErr("No valid sequence found – all resolved steps were ineffective at start progress=0.");
+        return;
+      }
+      savedSmith.unshift({ name, steps, folder: null });
+      persistSmith();
       renderSmithList();
-      showSuccess(res.steps);
+      showSuccess(steps);
     } else {
       showSmithErr("No combination found!");
     }
@@ -1316,7 +1445,7 @@ function solveSmith(nums, target, presets) {
     if (sum === newTarget) return { success: true, steps: [...steps, ...presets] };
     for (const n of nums) {
       const nextSum = sum + n;
-      if (!visited.has(nextSum) && Math.abs(nextSum) < 1000) { 
+      if (!visited.has(nextSum) && Math.abs(nextSum) < 1000) {
         visited.add(nextSum);
         queue.push({ sum: nextSum, steps: [...steps, SMITH_VAL_TO_NAME(n)] });
       }
@@ -1335,9 +1464,12 @@ function findBestHit(target) {
 }
 
 function SMITH_VAL_TO_NAME(v) {
-  return Object.keys(SMITH_ACTIONS).find(key => SMITH_ACTIONS[key] === v) || v;
+  return Object.keys(SMITH_ACTIONS).find(key => SMITH_ACTIONS[key] === v) || String(v);
 }
 
+/* ════════════════════════════════════════════════════════════════════════
+   PICKER & PRESET BAR
+   ════════════════════════════════════════════════════════════════════════ */
 function renderSmithPicker() {
   const picker = $('bs-picker');
   if(!picker) return;
@@ -1346,7 +1478,7 @@ function renderSmithPicker() {
   actions.forEach(a => {
     const btn = document.createElement('div');
     btn.className = 'bs-pick-btn';
-    let icon = a === "Any Hit" 
+    let icon = a === "Any Hit"
       ? `<svg width="24" height="24" viewBox="0 0 16 16" style="background:#555; border:1.5px solid #333; border-radius:4px; display:block;"><text x="8" y="11" text-anchor="middle" font-weight="900" font-size="10" fill="#fff">?</text></svg>`
       : getSmithSVG(a, 24);
     btn.innerHTML = `${icon}<div style="font-size:0.55rem; font-weight:700; color:var(--t2); text-transform:uppercase;">${a.replace(' Hit','')}</div>`;
@@ -1374,91 +1506,317 @@ function renderPresetBar() {
   });
 }
 
+/* ════════════════════════════════════════════════════════════════════════
+   FOLDER MANAGEMENT
+   ════════════════════════════════════════════════════════════════════════ */
+function createFolder() {
+  const name = prompt("Enter folder name:");
+  if (!name || !name.trim()) return;
+  const folderName = name.trim();
+  if (smithFolders.includes(folderName)) { alert("A folder with that name already exists."); return; }
+  smithFolders.push(folderName);
+  persistSmith();
+  renderSmithList();
+}
+
+function renameFolder(oldName) {
+  const newName = prompt("Rename folder:", oldName);
+  if (!newName || !newName.trim() || newName.trim() === oldName) return;
+  const trimmed = newName.trim();
+  if (smithFolders.includes(trimmed)) { alert("A folder with that name already exists."); return; }
+  const idx = smithFolders.indexOf(oldName);
+  if (idx !== -1) smithFolders[idx] = trimmed;
+  // Update all items that were in this folder
+  savedSmith.forEach(item => { if (item.folder === oldName) item.folder = trimmed; });
+  persistSmith();
+  renderSmithList();
+}
+
+function deleteFolder(name) {
+  if (!confirm(`Delete folder "${name}"? Items inside will become ungrouped.`)) return;
+  smithFolders = smithFolders.filter(f => f !== name);
+  savedSmith.forEach(item => { if (item.folder === name) item.folder = null; });
+  persistSmith();
+  renderSmithList();
+}
+
+function moveToFolder(smithIdx, folder) {
+  savedSmith[smithIdx].folder = folder;
+  persistSmith();
+  renderSmithList();
+  // Close any open dropdowns
+  document.querySelectorAll('.bs-move-dropdown').forEach(d => d.remove());
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   SAVED LIST RENDERER
+   ════════════════════════════════════════════════════════════════════════ */
+
+// Tracks collapsed state of each folder by name
+const folderCollapsed = {};
+
 function renderSmithList() {
   const wrap = $('bs-list');
   if(!wrap) return;
   wrap.innerHTML = '';
-  if (savedSmith.length === 0) { show('bs-empty'); return; }
-  hide('bs-empty');
-  savedSmith.forEach((item, idx) => {
-    const card = document.createElement('div');
-    card.className = 'bs-item';
-    const stepsHTML = item.steps.map(s => `
-      <div class="bs-icon-col">
-        ${getSmithSVG(s, 64)}
-        <div class="bs-icon-label">${s.replace(' Hit','')}</div>
-      </div>
-    `).join(' <span style="opacity:.2; font-size:1.5rem; margin-top:24px;">→</span> ');
-    card.innerHTML = `
-      <div style="flex:1">
-        <div style="font-size:.85rem;text-transform:uppercase;color:var(--t2);letter-spacing:0.1em;margin-bottom:16px;font-weight:700">${item.name}</div>
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">${stepsHTML}</div>
-      </div>
-      <button class="bs-del" onclick="delSmith(${idx})">Delete</button>
-    `;
-    wrap.appendChild(card);
-  });
-}
 
-function delSmith(idx) {
-  if (confirm("Delete this combination?")) {
-    savedSmith.splice(idx, 1);
-    localStorage.setItem("savedSmith", JSON.stringify(savedSmith));
-    renderSmithList();
+  const searchVal = ($('bs-search')?.value || '').toLowerCase().trim();
+
+  // Filter items by search
+  const filteredIndices = savedSmith
+    .map((item, idx) => ({ item, idx }))
+    .filter(({ item }) => !searchVal || item.name.toLowerCase().includes(searchVal));
+
+  if (filteredIndices.length === 0 && savedSmith.length === 0) {
+    show('bs-empty'); return;
   }
-}
-
-function renderSmithList() {
-  const wrap = $('bs-list');
-  if(!wrap) return;
-  wrap.innerHTML = '';
-  if (savedSmith.length === 0) { show('bs-empty'); return; }
   hide('bs-empty');
 
-  savedSmith.forEach((item, idx) => {
-    const isFeatured = (idx === 0);
-    const card = document.createElement('div');
-    card.className = 'bs-item' + (isFeatured ? ' featured' : ' minimized');
-    
-    const iconSize = isFeatured ? 64 : 32;
-    const stepsHTML = item.steps.map(s => `
-      <div class="bs-icon-col">
-        ${getSmithSVG(s, iconSize)}
-        <div class="bs-icon-label">${s.replace(' Hit','')}</div>
-      </div>
-    `).join(` <span style="opacity:.1; font-size:${isFeatured?1.2:0.8}rem; margin-top:${isFeatured?24:6}px;">→</span> `);
+  if (filteredIndices.length === 0 && searchVal) {
+    wrap.innerHTML = `<div style="text-align:center;padding:20px;font-size:.8rem;color:var(--t3)">No combinations match "${searchVal}"</div>`;
+    return;
+  }
 
-    card.innerHTML = `
-      <div style="flex:1; overflow:hidden">
-        <div style="font-size:${isFeatured?0.85:0.75}rem; text-transform:uppercase; color:var(--${isFeatured?'t1':'t2'}); letter-spacing:0.1em; margin-bottom:${isFeatured?16:4}px; font-weight:700">
-          ${isFeatured ? '🌟 ' : ''}${item.name}
-        </div>
-        <div style="display:flex; align-items:center; gap:${isFeatured?12:6}px; flex-wrap:nowrap; overflow-x:auto; padding-bottom:4px;">
-          ${stepsHTML}
-        </div>
+  // Group items: folders first, then ungrouped
+  const byFolder = {};
+  smithFolders.forEach(f => { byFolder[f] = []; });
+  const ungrouped = [];
+
+  filteredIndices.forEach(({ item, idx }) => {
+    if (item.folder && byFolder[item.folder] !== undefined) {
+      byFolder[item.folder].push({ item, idx });
+    } else {
+      ungrouped.push({ item, idx });
+    }
+  });
+
+  // Render each folder section
+  smithFolders.forEach(folderName => {
+    const items = byFolder[folderName];
+    // Always show folders (even empty ones) unless searching
+    if (searchVal && items.length === 0) return;
+
+    const section = document.createElement('div');
+    section.className = 'bs-folder-section';
+
+    const isOpen = folderCollapsed[folderName] !== true;
+    const header = document.createElement('div');
+    header.className = 'bs-folder-header' + (isOpen ? ' open' : '');
+    header.innerHTML = `
+      <span class="bs-folder-chevron">▶</span>
+      <span style="font-size:1rem">📁</span>
+      <span class="bs-folder-title">${escHtml(folderName)}</span>
+      <span class="bs-folder-count">${items.length}</span>
+      <div class="bs-folder-actions" onclick="event.stopPropagation()">
+        <button class="bs-folder-action-btn" onclick="renameFolder(${JSON.stringify(folderName)})">✏️ Rename</button>
+        <button class="bs-folder-action-btn danger" onclick="deleteFolder(${JSON.stringify(folderName)})">🗑 Delete</button>
+      </div>
+    `;
+    header.addEventListener('click', () => {
+      folderCollapsed[folderName] = isOpen; // toggle
+      renderSmithList();
+    });
+    section.appendChild(header);
+
+    const itemsWrap = document.createElement('div');
+    itemsWrap.className = 'bs-folder-items' + (isOpen ? '' : ' collapsed');
+    items.forEach(({ item, idx }) => itemsWrap.appendChild(buildSmithCard(item, idx)));
+    section.appendChild(itemsWrap);
+    wrap.appendChild(section);
+  });
+
+  // Render ungrouped items
+  ungrouped.forEach(({ item, idx }) => wrap.appendChild(buildSmithCard(item, idx)));
+}
+
+function buildSmithCard(item, idx) {
+  const card = document.createElement('div');
+  card.className = 'bs-item';
+  card.draggable = true;
+  card.dataset.idx = idx;
+
+  const isFeatured = (idx === 0 && !($('bs-search')?.value || '').trim());
+
+  // Click to promote/feature
+  card.addEventListener('click', () => {
+    if (!isFeatured) promoteSmith(idx);
+  });
+  const iconSize = isFeatured 
+    ? (item.steps.length > 8 ? 42 : 54) 
+    : 32;
+
+  const stepsHTML = item.steps.map(s => `
+    <div class="bs-icon-col" style="min-width:${iconSize+4}px">
+      ${getSmithSVG(s, iconSize)}
+      <div class="bs-icon-label" style="font-size:${iconSize < 40 ? 0.5 : 0.65}rem">${s.replace(' Hit','')}</div>
+    </div>
+  `).join(`<span style="opacity:.1; font-size:${isFeatured?1:0.75}rem; margin-top:${isFeatured?(iconSize/2):4}px; flex-shrink:0;">→</span>`);
+
+  // Name area — can be swapped with an input on rename
+  const nameId = `smith-name-${idx}`;
+  const folderLabel = item.folder ? `<span style="font-size:.6rem;color:var(--acc);opacity:.7;margin-left:6px">📁 ${escHtml(item.folder)}</span>` : '';
+
+  card.innerHTML = `
+    <div style="flex:1; overflow:hidden">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:${isFeatured?16:6}px;flex-wrap:wrap">
+        <span id="${nameId}" style="font-size:${isFeatured?.85:.75}rem;text-transform:uppercase;color:var(--${isFeatured?'t1':'t2'});letter-spacing:.1em;font-weight:700">${isFeatured?'🌟 ':''}${escHtml(item.name)}</span>
+        ${folderLabel}
+      </div>
+      <div style="display:flex;align-items:center;gap:${isFeatured?8:4}px;flex-wrap:wrap;padding-bottom:2px;">
+        ${stepsHTML}
+      </div>
+    </div>
+    <div class="bs-card-actions">
+      <button class="bs-rename-btn" title="Rename">✏️</button>
+      <div style="position:relative">
+        <button class="bs-move-btn" title="Move to folder">📁</button>
       </div>
       <button class="bs-del" onclick="event.stopPropagation(); delSmith(${idx})">Delete</button>
-    `;
-    
-    if(!isFeatured){
-      card.onclick = () => promoteSmith(idx);
-    }
-    
-    wrap.appendChild(card);
+    </div>
+  `;
+
+  // Rename button
+  card.querySelector('.bs-rename-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    startRename(card, nameId, idx, isFeatured);
   });
+
+  // Move-to-folder button
+  card.querySelector('.bs-move-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    openMoveDropdown(e.currentTarget.closest('div[style*="position:relative"]'), idx);
+  });
+
+  // Drag events
+  card.addEventListener('dragstart', (e) => {
+    dragSrcIdx = idx;
+    card.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  card.addEventListener('dragend', () => {
+    card.classList.remove('dragging');
+    document.querySelectorAll('.bs-item.drag-over').forEach(c => c.classList.remove('drag-over'));
+  });
+  card.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    card.classList.add('drag-over');
+  });
+  card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+  card.addEventListener('drop', (e) => {
+    e.preventDefault();
+    card.classList.remove('drag-over');
+    const dropIdx = parseInt(card.dataset.idx);
+    if (dragSrcIdx === null || dragSrcIdx === dropIdx) return;
+    const moved = savedSmith.splice(dragSrcIdx, 1)[0];
+    const newDropIdx = dragSrcIdx < dropIdx ? dropIdx - 1 : dropIdx;
+    savedSmith.splice(newDropIdx, 0, moved);
+    dragSrcIdx = null;
+    persistSmith();
+    renderSmithList();
+  });
+
+  return card;
+}
+
+function startRename(card, nameId, idx, isFeatured) {
+  const nameSpan = card.querySelector(`#${nameId}`);
+  const currentName = savedSmith[idx].name;
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'bs-inline-rename';
+  input.value = currentName;
+
+  nameSpan.replaceWith(input);
+  input.focus();
+  input.select();
+
+  function commit() {
+    const newName = input.value.trim();
+    if (newName) {
+      savedSmith[idx].name = newName;
+      persistSmith();
+    }
+    renderSmithList();
+  }
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') commit();
+    if (e.key === 'Escape') renderSmithList(); // cancel
+  });
+  input.addEventListener('blur', commit);
+}
+
+function openMoveDropdown(anchor, idx) {
+  // Close any existing dropdown first
+  document.querySelectorAll('.bs-move-dropdown').forEach(d => d.remove());
+
+  const dropdown = document.createElement('div');
+  dropdown.className = 'bs-move-dropdown';
+
+  const currentFolder = savedSmith[idx].folder;
+
+  // "No folder" option
+  const noneOpt = document.createElement('div');
+  noneOpt.className = 'bs-move-dropdown-item' + (!currentFolder ? ' active' : '');
+  noneOpt.textContent = '— No folder';
+  noneOpt.onclick = () => moveToFolder(idx, null);
+  dropdown.appendChild(noneOpt);
+
+  smithFolders.forEach(f => {
+    const opt = document.createElement('div');
+    opt.className = 'bs-move-dropdown-item' + (currentFolder === f ? ' active' : '');
+    opt.textContent = `📁 ${f}`;
+    opt.onclick = () => moveToFolder(idx, f);
+    dropdown.appendChild(opt);
+  });
+
+  if (smithFolders.length === 0) {
+    const hint = document.createElement('div');
+    hint.className = 'bs-move-dropdown-item';
+    hint.style.color = 'var(--t3)';
+    hint.style.fontStyle = 'italic';
+    hint.textContent = 'No folders yet';
+    dropdown.appendChild(hint);
+  }
+
+  anchor.appendChild(dropdown);
+
+  // Close on outside click
+  setTimeout(() => {
+    document.addEventListener('click', function handler() {
+      dropdown.remove();
+      document.removeEventListener('click', handler);
+    });
+  }, 0);
 }
 
 function promoteSmith(idx) {
   const item = savedSmith.splice(idx, 1)[0];
   savedSmith.unshift(item);
-  localStorage.setItem("savedSmith", JSON.stringify(savedSmith));
+  persistSmith();
   renderSmithList();
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   DELETE + ERROR + SUCCESS
+   ════════════════════════════════════════════════════════════════════════ */
+function delSmith(idx) {
+  if (confirm("Delete this combination?")) {
+    savedSmith.splice(idx, 1);
+    persistSmith();
+    renderSmithList();
+  }
 }
 
 function showSmithErr(msg) {
   $('bs-err').textContent = `⚠️ ${msg}`;
   show('bs-err');
 }
+
 function showSuccess(steps) {
   const stepsHTML = steps.map(s => `
     <div class="bs-icon-col" style="min-width:48px">
@@ -1471,7 +1829,7 @@ function showSuccess(steps) {
       <div style="display:flex;gap:10px;flex-wrap:wrap">${stepsHTML}</div>
     </div>`;
   show('bs-results');
-  setTimeout(()=>hide('bs-results'), 6000);
+  setTimeout(() => hide('bs-results'), 6000);
 }
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -1480,9 +1838,24 @@ function showSuccess(steps) {
 renderGrid();
 bindEvents();
 
+// Expose globals for inline onclick
+window.delSmith       = delSmith;
+window.renameFolder   = renameFolder;
+window.deleteFolder   = deleteFolder;
+window.moveToFolder   = moveToFolder;
 
-// Global scope for onclick handlers
-window.delSmith = delSmith;
+// Auto-scroll on drag
+window.addEventListener('dragover', (e) => {
+  const list = $('bs-list');
+  if (!list || dragSrcIdx === null) return;
+  const rect = list.getBoundingClientRect();
+  const threshold = 80;
+  if (e.clientY < rect.top + threshold) {
+    list.scrollTop -= 12;
+  } else if (e.clientY > rect.bottom - threshold) {
+    list.scrollTop += 12;
+  }
+});
 </script>
 </body>
 </html>
