@@ -60,7 +60,7 @@ main{
 @media(max-width:820px){main{grid-template-columns:1fr}}
 
 /* smithing specific layout override */
-#smith-tool{grid-template-columns:360px 1fr;gap:24px}
+#smith-tool{grid-template-columns:360px 1fr;gap:24px;position:relative}
 @media(max-width:1000px){#smith-tool{grid-template-columns:1fr}}
 
 /* scrollbar */
@@ -366,17 +366,46 @@ main{
 .bs-item.dragging{opacity:.4}
 
 /* ═══ Move-to-folder dropdown ══════════════════════════════════════════ */
-.bs-move-dropdown{
-  position:absolute;right:0;top:100%;margin-top:4px;
-  background:var(--bg2);border:1px solid var(--bdr-hi);border-radius:var(--rsm);
-  min-width:160px;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,.5);
-  overflow:hidden;
+.bs-move-dropdown {
+  position: absolute; /* positioned relative to #smith-tool */
+  background: #000 !important;
+  border: 1px solid var(--acc); border-radius: var(--rsm);
+  min-width: 160px; z-index: 99999; box-shadow: 0 12px 40px rgba(0,0,0,1);
+  overflow: hidden;
 }
+/* z-index lift not needed with portal-dropdown, but kept as backup or removed */
 .bs-move-dropdown-item{
   padding:8px 14px;font-size:.8rem;color:var(--t2);cursor:pointer;transition:var(--ease);
 }
 .bs-move-dropdown-item:hover{background:rgba(255,255,255,.06);color:var(--t1)}
 .bs-move-dropdown-item.active{color:var(--acc)}
+
+/* ═══ Featured/Current recipe pop-out ══════════════════════════════════ */
+.bs-featured-wrap { margin-bottom: 0px; }
+.bs-featured-area {
+  background: var(--surf);
+  border: 1px solid var(--acc);
+  border-radius: var(--rl);
+  padding: 16px 20px;
+  box-shadow: 0 0 20px rgba(240,146,58,0.1), var(--sh);
+  position: relative;
+  /* changed to visible so move-dropdown doesn't get cut off */
+  overflow: visible !important;
+  animation: pop-in 0.3s ease-out;
+}
+#bs-featured { overflow: visible !important; }
+#bs-current-panel { overflow: visible !important; }
+@keyframes pop-in {
+  from { opacity:0; transform: translateY(5px); }
+  to { opacity:1; transform: translateY(0); }
+}
+.bs-featured-label {
+  position: absolute; top:0; right:0;
+  background: var(--acc); color:#fff;
+  font-size: 0.55rem; font-weight:800; padding:2px 8px;
+  border-radius:0 0 0 6px; text-transform:uppercase; letter-spacing:.1em;
+  pointer-events: none;
+}
 
 .hidden{display:none!important}
 
@@ -521,23 +550,32 @@ footer a:hover{text-decoration:underline}
       <div style="display:flex;align-items:center;gap:5px;font-size:.65rem;color:var(--t2);">⚒️ Smithing (Green)</div>
     </div>
   </section>
+  
+  <!-- Right Column -->
+  <div style="display:flex; flex-direction:column; gap:24px">
+    <!-- Current Combination Panel -->
+    <section class="panel" id="bs-current-panel" style="display:none">
+      <div class="panel-label">Current Combination</div>
+      <div id="bs-featured" class="bs-featured-wrap"></div>
+    </section>
 
-  <!-- Saved Panel -->
-  <section class="panel">
-    <div class="bs-saved-header">
-      <div class="panel-label" style="margin-bottom:0">Saved Combinations</div>
-      <button class="bs-folder-btn" id="bs-new-folder-btn" title="Create new folder">📁 New Folder</button>
-    </div>
-    <div class="bs-search-wrap">
-      <span class="bs-search-icon">🔍</span>
-      <input type="text" id="bs-search" class="bs-search-input" placeholder="Search combinations…" autocomplete="off"/>
-    </div>
-    <div id="bs-list"></div>
-    <div id="bs-empty" class="hint">
-      <div class="hint-icon">📜</div>
-      <p>No saved sequences yet.</p>
-    </div>
-  </section>
+    <!-- Saved Panel -->
+    <section class="panel">
+      <div class="bs-saved-header">
+        <div class="panel-label" style="margin-bottom:0">Saved Combinations</div>
+        <button class="bs-folder-btn" id="bs-new-folder-btn" title="Create new folder">📁 New Folder</button>
+      </div>
+      <div class="bs-search-wrap">
+        <span class="bs-search-icon">🔍</span>
+        <input type="text" id="bs-search" class="bs-search-input" placeholder="Search combinations…" autocomplete="off"/>
+      </div>
+      <div id="bs-list"></div>
+      <div id="bs-empty" class="hint">
+        <div class="hint-icon">📜</div>
+        <p>No saved sequences yet.</p>
+      </div>
+    </section>
+  </div>
 </main>
 
 <footer>
@@ -1557,8 +1595,13 @@ const folderCollapsed = {};
 
 function renderSmithList() {
   const wrap = $('bs-list');
-  if(!wrap) return;
+  const featWrap = $('bs-featured');
+  const featPanel = $('bs-current-panel');
+  if(!wrap || !featWrap || !featPanel) return;
+  
   wrap.innerHTML = '';
+  featWrap.innerHTML = '';
+  featPanel.style.display = 'none';
 
   const searchVal = ($('bs-search')?.value || '').toLowerCase().trim();
 
@@ -1577,12 +1620,21 @@ function renderSmithList() {
     return;
   }
 
+  // Handle Current Combination (if no search)
+  let skipIdx = -1;
+  if (!searchVal && savedSmith.length > 0) {
+    featPanel.style.display = 'block';
+    featWrap.appendChild(renderCurrentCard(savedSmith[0], 0));
+    skipIdx = 0;
+  }
+
   // Group items: folders first, then ungrouped
   const byFolder = {};
   smithFolders.forEach(f => { byFolder[f] = []; });
   const ungrouped = [];
 
   filteredIndices.forEach(({ item, idx }) => {
+    if (idx === skipIdx) return; // Already featured
     if (item.folder && byFolder[item.folder] !== undefined) {
       byFolder[item.folder].push({ item, idx });
     } else {
@@ -1593,8 +1645,9 @@ function renderSmithList() {
   // Render each folder section
   smithFolders.forEach(folderName => {
     const items = byFolder[folderName];
-    // Always show folders (even empty ones) unless searching
     if (searchVal && items.length === 0) return;
+    // Removed the "skip empty folders" check when not searching
+    // This allows newly created empty folders to be visible.
 
     const section = document.createElement('div');
     section.className = 'bs-folder-section';
@@ -1629,28 +1682,63 @@ function renderSmithList() {
   ungrouped.forEach(({ item, idx }) => wrap.appendChild(buildSmithCard(item, idx)));
 }
 
+function renderCurrentCard(item, idx) {
+  const card = document.createElement('div');
+  card.className = 'bs-featured-area';
+  
+  const iconSize = item.steps.length > 8 ? 48 : 56;
+  
+  const stepsHTML = item.steps.map(s => `
+    <div class="bs-icon-col" style="min-width:${iconSize+8}px">
+      ${getSmithSVG(s, iconSize)}
+      <div class="bs-icon-label" style="font-size:0.7rem">${s.replace(' Hit','')}</div>
+    </div>
+  `).join(`<span style="opacity:.2; font-size:1.2rem; margin-top:${iconSize/2}px; flex-shrink:0;">→</span>`);
+
+  const nameId = `smith-name-curr-${idx}`;
+  const folderLabel = item.folder ? `<span style="font-size:.7rem;color:var(--acc);opacity:.8;margin-left:8px">📁 ${escHtml(item.folder)}</span>` : '';
+
+  card.innerHTML = `
+    <div class="bs-featured-label">Current Combination</div>
+    <div style="flex:1; overflow:hidden">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <span id="${nameId}" style="font-size:1rem;text-transform:uppercase;color:var(--t1);letter-spacing:.08em;font-weight:800">🌟 ${escHtml(item.name)}</span>
+        ${folderLabel}
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-bottom:10px;">
+        ${stepsHTML}
+      </div>
+    </div>
+    <div class="bs-card-actions" style="margin-top:12px; border-top:1px solid var(--bdr); padding-top:12px; justify-content:flex-end">
+      <button class="bs-rename-btn" style="padding:4px 12px">✏️ Rename</button>
+      <div style="position:relative">
+        <button class="bs-move-btn" style="padding:4px 12px">📁 Move</button>
+      </div>
+      <button class="bs-del" style="padding:4px 12px" onclick="event.stopPropagation(); delSmith(${idx})">🗑 Delete</button>
+    </div>
+  `;
+
+  card.querySelector('.bs-rename-btn').onclick = (e) => { e.stopPropagation(); startRename(card, nameId, idx, true); };
+  card.querySelector('.bs-move-btn').onclick = (e) => { e.stopPropagation(); openMoveDropdown(e.currentTarget.closest('div[style*="position:relative"]'), idx); };
+
+  return card;
+}
+
 function buildSmithCard(item, idx) {
   const card = document.createElement('div');
-  card.className = 'bs-item';
+  card.className = 'bs-item minimized';
   card.draggable = true;
   card.dataset.idx = idx;
 
-  const isFeatured = (idx === 0 && !($('bs-search')?.value || '').trim());
+  card.addEventListener('click', () => promoteSmith(idx));
 
-  // Click to promote/feature
-  card.addEventListener('click', () => {
-    if (!isFeatured) promoteSmith(idx);
-  });
-  const iconSize = isFeatured 
-    ? (item.steps.length > 8 ? 42 : 54) 
-    : 32;
+  const iconSize = 32;
 
   const stepsHTML = item.steps.map(s => `
     <div class="bs-icon-col" style="min-width:${iconSize+4}px">
       ${getSmithSVG(s, iconSize)}
-      <div class="bs-icon-label" style="font-size:${iconSize < 40 ? 0.5 : 0.65}rem">${s.replace(' Hit','')}</div>
     </div>
-  `).join(`<span style="opacity:.1; font-size:${isFeatured?1:0.75}rem; margin-top:${isFeatured?(iconSize/2):4}px; flex-shrink:0;">→</span>`);
+  `).join(`<span style="opacity:.15; font-size:0.75rem; margin-top:4px; flex-shrink:0;">→</span>`);
 
   // Name area — can be swapped with an input on rename
   const nameId = `smith-name-${idx}`;
@@ -1658,27 +1746,27 @@ function buildSmithCard(item, idx) {
 
   card.innerHTML = `
     <div style="flex:1; overflow:hidden">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:${isFeatured?16:6}px;flex-wrap:wrap">
-        <span id="${nameId}" style="font-size:${isFeatured?.85:.75}rem;text-transform:uppercase;color:var(--${isFeatured?'t1':'t2'});letter-spacing:.1em;font-weight:700">${isFeatured?'🌟 ':''}${escHtml(item.name)}</span>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap">
+        <span id="${nameId}" style="font-size:.78rem;text-transform:uppercase;color:var(--t2);letter-spacing:.05em;font-weight:700">${escHtml(item.name)}</span>
         ${folderLabel}
       </div>
-      <div style="display:flex;align-items:center;gap:${isFeatured?8:4}px;flex-wrap:wrap;padding-bottom:2px;">
+      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding-bottom:2px;">
         ${stepsHTML}
       </div>
     </div>
     <div class="bs-card-actions">
-      <button class="bs-rename-btn" title="Rename">✏️</button>
+      <button class="bs-rename-btn" title="Rename" style="padding: 2px 6px">✏️</button>
       <div style="position:relative">
-        <button class="bs-move-btn" title="Move to folder">📁</button>
+        <button class="bs-move-btn" title="Move to folder" style="padding: 2px 6px">📁</button>
       </div>
-      <button class="bs-del" onclick="event.stopPropagation(); delSmith(${idx})">Delete</button>
+      <button class="bs-del" style="padding: 2px 6px; font-size: 0.6rem" onclick="event.stopPropagation(); delSmith(${idx})">🗑</button>
     </div>
   `;
 
   // Rename button
   card.querySelector('.bs-rename-btn').addEventListener('click', (e) => {
     e.stopPropagation();
-    startRename(card, nameId, idx, isFeatured);
+    startRename(card, nameId, idx, false);
   });
 
   // Move-to-folder button
@@ -1752,7 +1840,7 @@ function openMoveDropdown(anchor, idx) {
 
   const dropdown = document.createElement('div');
   dropdown.className = 'bs-move-dropdown';
-
+  
   const currentFolder = savedSmith[idx].folder;
 
   // "No folder" option
@@ -1779,7 +1867,14 @@ function openMoveDropdown(anchor, idx) {
     dropdown.appendChild(hint);
   }
 
-  anchor.appendChild(dropdown);
+  const rect = anchor.getBoundingClientRect();
+  const toolRect = $('smith-tool').getBoundingClientRect();
+  
+  dropdown.style.left = (rect.left - toolRect.left) + 'px';
+  dropdown.style.top = (rect.bottom - toolRect.top + 4) + 'px';
+  dropdown.style.right = 'auto'; // Disable the right:0 from CSS
+  
+  $('smith-tool').appendChild(dropdown);
 
   // Close on outside click
   setTimeout(() => {
