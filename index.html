@@ -434,10 +434,17 @@ footer a:hover{text-decoration:underline}
 
 <main id="alloy-tool">
   <!-- ── Alloy picker ────────────────────────────────── -->
-  <section class="panel">
-    <div class="panel-label">Select Alloy</div>
-    <div class="alloy-grid" id="alloy-grid"></div>
-  </section>
+  <div style="display:flex; flex-direction:column; gap:22px">
+    <section class="panel">
+      <div class="panel-label">Select Alloy</div>
+      <div class="alloy-grid" id="alloy-grid"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-label">Steel Alloys</div>
+      <div class="alloy-grid" id="steel-grid"></div>
+    </section>
+  </div>
 
   <!-- ── Config + Results ───────────────────────────── -->
   <section class="panel cfg">
@@ -600,6 +607,7 @@ const PURITIES = {
   dust:       { label:'Dust',         baseMB:144 },
   small_dust: { label:'Small Dust',   baseMB:36  }, // Note: Base is 36, then modified by ore % 
   nugget:     { label:'Small Nugget', baseMB:16  },
+  ingot:      { label:'Ingot (144 mB)', baseMB:144 },
 };
 
 const ORE_SOURCES = {
@@ -662,10 +670,12 @@ const INGOT_COLORS = {
   weak_steel:      ['#848e94', '#aab4b8', '#5b6369', '#2a3136'],
   red_steel:       ['#8f4040', '#b56060', '#632222', '#2e0a0a'],
   blue_steel:      ['#466282', '#698aab', '#2c435c', '#152536'],
-  pig_iron:        ['#a38d8d', '#ccb6b6', '#756060', '#362727'],
+  red_alloy:       ['#c92222', '#ed4242', '#a31f1f', '#660b0b'],
+  tin_alloy:       ['#aebec7', '#d0e1eb', '#8d9c9e', '#5a6b73'],
+
   tin_bronze:      ['#cdb968', '#f2db83', '#a38f42', '#4f4214'],
   brass:           ['#EBC43B', '#FCE979', '#C59A24', '#6B5412'],
-  black_steel:     ['#333333', '#555555', '#1A1A1A', '#000000']
+
 };
 
 function getIngotSVG(c){
@@ -753,22 +763,14 @@ const ALLOYS = [
       {name:'Copper', id:'copper', min: 5, max:10},
     ],
   },
-  {
-    id:'pig_iron', name:'Pig Iron',
-    tech:[2,3],
-    comps:[
-      {name:'Iron',   id:'iron',   min:88, max:92},
-      {name:'Carbon', id:'carbon', min: 4, max: 8},
-      {name:'Sulfur', id:'sulfur', min: 4, max: 8},
-    ],
-  },
+
   {
     id:'weak_steel', name:'Weak Steel',
     tech:[2,3],
     comps:[
-      {name:'Wrought Iron',  id:'wrought_iron',  min:88, max:92},
-      {name:'Nickel',        id:'nickel',         min: 4, max: 8},
-      {name:'Black Bronze',  id:'black_bronze',   min: 4, max: 8},
+      {name:'Steel',         id:'steel',          min:50, max:70},
+      {name:'Nickel',        id:'nickel',         min:15, max:25},
+      {name:'Black Bronze',  id:'black_bronze',   min:15, max:25},
     ],
   },
   {
@@ -798,14 +800,22 @@ const ALLOYS = [
     ],
   },
   {
-    id:'black_steel', name:'Black Steel',
+    id:'red_alloy', name:'Red Alloy',
     tech:[2,3],
     comps:[
-      {name:'Steel',       id:'steel',        min:50, max:70},
-      {name:'Black Bronze',id:'black_bronze', min:10, max:25},
-      {name:'Nickel',      id:'nickel',       min:10, max:25},
+      {name:'Copper',   id:'copper',   min:15, max:25},
+      {name:'Redstone', id:'redstone', min:75, max:85},
     ],
   },
+  {
+    id:'tin_alloy', name:'Tin Alloy',
+    tech:[2,3],
+    comps:[
+      {name:'Iron', id:'iron', min:45, max:55},
+      {name:'Tin',  id:'tin',  min:45, max:55},
+    ],
+  },
+
 ];
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -831,7 +841,11 @@ function clamp(v,lo,hi){ return Math.max(lo,Math.min(hi,v)) }
 function solve(alloy, targetIngots, techLevel, purityMap, useSmallDusts, useNuggets, minimizeMap, sourceMap){
   const comps  = alloy.comps;
   const n      = comps.length;
-  const mbArr  = comps.map(c => calcMB(PURITIES[purityMap[c.id]].baseMB, sourceMap[c.id] || 100));
+  const mbArr  = comps.map(c => {
+     const pKey = purityMap[c.id];
+     const isPure = pKey === 'ingot' || pKey === 'nugget';
+     return calcMB(PURITIES[pKey].baseMB, isPure ? 100 : (sourceMap[c.id] || 100));
+  });
   const minPct = comps.map(c => c.min / 100);
   const maxPct = comps.map(c => c.max / 100);
   const maxMB  = TECH_LEVELS[techLevel].maxMB;
@@ -849,9 +863,17 @@ function solve(alloy, targetIngots, techLevel, purityMap, useSmallDusts, useNugg
   for(let headroom = 0; headroom <= MAX_HEADROOM; headroom++){
     const upperMB = Math.min((targetIngots + headroom) * INGOT_MB, maxMB);
 
+    const ALLOY_COMPS = ['steel', 'weak_steel', 'black_bronze', 'rose_gold', 'sterling_silver', 'bismuth_bronze'];
     // ── Step 0: build input components ───────────────────────────────
     let inputs = [];
     for(let i=0; i<n; i++){
+      const isAlloyComp = ALLOY_COMPS.includes(comps[i].id);
+
+      if (isAlloyComp) {
+         inputs.push({ compIdx: i, mB: INGOT_MB, type: 'ingot' });
+         continue;
+      }
+
       inputs.push({ compIdx: i, mB: mbArr[i], type:'base' });
       const percent = sourceMap[comps[i].id] || 100;
       
@@ -968,7 +990,9 @@ function solve(alloy, targetIngots, techLevel, purityMap, useSmallDusts, useNugg
           compResults[cp].totalCount += best[i];
           compResults[cp].contribMB += best[i] * inputs[i].mB;
           
-          if(inputs[i].type === 'small_dust') {
+          if(inputs[i].type === 'ingot') {
+             compResults[cp].items.push({ label: 'Ingot', count: best[i], mB_per: inputs[i].mB });
+          } else if(inputs[i].type === 'small_dust') {
              const mB = calcMB(PURITIES.small_dust.baseMB, sourceMap[comps[cp].id] || 100);
              compResults[cp].items.push({ label: 'Small Dust', count: best[i], mB_per: mB });
           } else if(inputs[i].type === 'nugget') {
@@ -1036,7 +1060,10 @@ const hide = id => $(id).classList.add('hidden');
    ════════════════════════════════════════════════════════════════════════ */
 function renderGrid(){
   const grid = $('alloy-grid');
+  const steelGrid = $('steel-grid');
   grid.innerHTML = '';
+  steelGrid.innerHTML = '';
+  const steelIds = ['weak_steel', 'red_steel', 'blue_steel', 'steel'];
   ALLOYS.forEach(a=>{
     const card = document.createElement('div');
     card.className = 'acard';
@@ -1050,7 +1077,11 @@ function renderGrid(){
     `;
     card.addEventListener('click', ()=>selectAlloy(a));
     card.addEventListener('keydown', e=>e.key==='Enter'&&selectAlloy(a));
-    grid.appendChild(card);
+    if (steelIds.includes(a.id)) {
+      steelGrid.appendChild(card);
+    } else {
+      grid.appendChild(card);
+    }
   });
 }
 
@@ -1063,7 +1094,8 @@ function selectAlloy(a){
   S.minimize = {};
   S.source = {};
   a.comps.forEach(c=>{ 
-     S.purity[c.id]='normal'; 
+     const isAlloyComp = ['steel', 'weak_steel', 'black_bronze', 'rose_gold', 'sterling_silver', 'bismuth_bronze'].includes(c.id);
+     S.purity[c.id]= isAlloyComp ? 'dust' : 'normal'; 
      S.minimize[c.id]=false; 
      const srcList = ORE_SOURCES[c.id] || ORE_SOURCES.default;
      S.source[c.id] = srcList[0].pct;
@@ -1095,6 +1127,28 @@ function selectAlloy(a){
 
   // show sections
   show('tech-sec'); show('amt-sec'); show('purity-sec'); show('calc-sec');
+
+  const amtPills = $('amt-pills');
+  const isSteelFamily = ['weak_steel', 'red_steel', 'blue_steel', 'steel'].includes(a.id);
+  if (isSteelFamily) {
+    amtPills.innerHTML = `
+      <button class="pill on" data-amt="4">4</button>
+      <button class="pill"    data-amt="8">8</button>
+      <button class="pill"    data-amt="20">20</button>
+      <button class="pill"    data-amt="custom">Custom</button>
+    `;
+    S.ingots = 4;
+  } else {
+    amtPills.innerHTML = `
+      <button class="pill on" data-amt="1">1</button>
+      <button class="pill"    data-amt="5">5</button>
+      <button class="pill"    data-amt="10">10</button>
+      <button class="pill"    data-amt="custom">Custom</button>
+    `;
+    S.ingots = 1;
+  }
+  hide('custom-row'); S.isCustom = false;
+
   hide('results'); hide('err');
   $('results').innerHTML = '';
 
@@ -1103,8 +1157,14 @@ function selectAlloy(a){
 
 function updateTechPills(){
   const avail = new Set(S.alloy.tech);
+  const isSteelFamily = ['weak_steel', 'red_steel', 'blue_steel', 'steel'].includes(S.alloy.id);
   document.querySelectorAll('#tech-pills .pill').forEach(p=>{
     const t = +p.dataset.tl;
+    if (t === 1 && isSteelFamily) {
+        p.style.display = 'none';
+    } else {
+        p.style.display = '';
+    }
     p.classList.toggle('off', !avail.has(t));
     p.classList.toggle('on',   t === S.tech && avail.has(t));
   });
@@ -1180,18 +1240,30 @@ function buildPurityRows(a){
 
     const pills = document.createElement('div');
     pills.className='ppills';
-    Object.entries(PURITIES).forEach(([key,p])=>{
+
+    const isAlloyComp = ['steel', 'weak_steel', 'black_bronze', 'rose_gold', 'sterling_silver', 'bismuth_bronze'].includes(c.id);
+
+    if (isAlloyComp) {
       const btn = document.createElement('button');
-      btn.className='ppill'+(S.purity[c.id]===key?' on':'');
-      const actualMB = calcMB(p.baseMB, key === 'nugget' ? 100 : S.source[c.id]);
-      btn.textContent=`${p.label} (${actualMB} mB)`;
-      btn.addEventListener('click',()=>{
-        pills.querySelectorAll('.ppill').forEach(b=>b.classList.remove('on'));
-        btn.classList.add('on');
-        S.purity[c.id]=key;
-      });
+      btn.className='ppill on';
+      btn.textContent=`Dust/Ingot (144 mB)`;
       pills.appendChild(btn);
-    });
+    } else {
+      Object.entries(PURITIES).forEach(([key,p])=>{
+        const btn = document.createElement('button');
+        btn.className='ppill'+(S.purity[c.id]===key?' on':'');
+        const isPure = key === 'nugget' || key === 'ingot';
+        const actualMB = calcMB(p.baseMB, isPure ? 100 : S.source[c.id]);
+        btn.textContent=`${p.label} (${actualMB} mB)`;
+        btn.addEventListener('click',()=>{
+          pills.querySelectorAll('.ppill').forEach(b=>b.classList.remove('on'));
+          btn.classList.add('on');
+          S.purity[c.id]=key;
+        });
+        pills.appendChild(btn);
+      });
+    }
+    
     row.appendChild(pills);
     wrap.appendChild(row);
   });
